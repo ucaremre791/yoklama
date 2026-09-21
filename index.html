@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sarıyer Eğitim Merkezi – Yoklama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Kalam:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --paper:#F5F8FC; --card:#FFFFFF; --ink:#18264A; --muted:#5A6883; --line:#D3DCEA; --rule:#E6ECF5;
+  --brand:#2446A6; --brand-soft:#E6ECFA; --ok:#16804C; --okbg:#E2F3E9; --no:#C23628; --nobg:#FBE5E1;
+  --guest:#9A5A06; --guestbg:#FCEFD6; --hl:#FFF4B8; --hl-line:#E6C84A; --shadow:0 1px 2px rgba(24,38,74,.08);
+  --r:10px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --paper:#0F1626; --card:#172036; --ink:#E7ECF7; --muted:#9AA7C2; --line:#2B3857; --rule:#222D47;
+  --brand:#8FA9F5; --brand-soft:#223056; --ok:#5CCB8F; --okbg:#173A2A; --no:#F07A6C; --nobg:#44211D;
+  --guest:#F0B55A; --guestbg:#3D2D12; --hl:#3A3514; --hl-line:#8C7A22; --shadow:none;
+}}
+:root[data-theme="dark"]{
+  --paper:#0F1626; --card:#172036; --ink:#E7ECF7; --muted:#9AA7C2; --line:#2B3857; --rule:#222D47;
+  --brand:#8FA9F5; --brand-soft:#223056; --ok:#5CCB8F; --okbg:#173A2A; --no:#F07A6C; --nobg:#44211D;
+  --guest:#F0B55A; --guestbg:#3D2D12; --hl:#3A3514; --hl-line:#8C7A22; --shadow:none;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;min-height:100%}
+body{background:var(--paper);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--brand)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.hidden{display:none!important}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);border-bottom:1px solid var(--line)}
+.bar-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em;min-width:0}
+.logo-mark{width:30px;height:30px;border-radius:8px;background:var(--brand);color:var(--card);display:grid;place-items:center;font-family:Kalam,cursive;font-size:20px;flex:none}
+.logo small{display:block;font-weight:500;color:var(--muted);font-size:12.5px;line-height:1.1}
+.logo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .sp{flex:1}
+.tabs{max-width:1180px;margin:0 auto;display:flex;gap:4px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:10px 12px 11px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tab[aria-current="true"]{color:var(--ink);border-bottom-color:var(--brand)}
+.tab .count{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:var(--guestbg);color:var(--guest);font-size:12.5px}
+
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:28px;line-height:1.15;margin:0 0 6px;letter-spacing:-.02em}
+h2{font-size:19px;margin:0 0 10px;letter-spacing:-.01em}
+h3{font-size:16px;margin:0 0 6px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.section{margin-top:26px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:16px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--ink);min-height:40px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--card)}
+.btn.wa{background:#1F9D55;border-color:#1F9D55;color:#fff}
+.btn.danger{color:var(--no);border-color:var(--no)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:14px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;cursor:pointer;text-align:left}
+.chip small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--card)}
+.chip[aria-pressed="true"] small{color:var(--card);opacity:.85}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:8px 14px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--card)}
+
+label.f{display:block;font-size:14px;font-weight:600;margin:12px 0 5px}
+.in{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--card);min-height:42px}
+textarea.in{min-height:110px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+
+/* login */
+.login{max-width:520px;margin:0 auto;padding-top:26px}
+.login .lead{margin:0 0 26px;color:var(--muted)}
+.tlist{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tbtn{border:1px solid var(--line);background:var(--card);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;font-weight:700;font-size:17px}
+.tbtn small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.tbtn[aria-pressed="true"]{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.pin{letter-spacing:.5em;font-size:22px;text-align:center;font-weight:700}
+
+/* the sheet */
+.sheet-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.sheet-head h2{margin:0}
+.monthnav{display:flex;align-items:center;gap:4px}
+.monthnav b{min-width:120px;text-align:center}
+.iconbtn{border:1px solid var(--line);background:var(--card);border-radius:8px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer;font-size:18px}
+.sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.sheet{border-collapse:separate;border-spacing:0;min-width:100%;font-size:15px}
+.sheet th,.sheet td{border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);padding:0;text-align:center;height:46px}
+.sheet thead th{background:var(--card);font-weight:600;position:sticky;top:0;z-index:2;height:52px;border-bottom:1px solid var(--line)}
+.sheet th.dcol{min-width:50px;cursor:default}
+.sheet th.dcol button{border:0;background:none;width:100%;height:100%;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.sheet th.dcol b{font-size:17px}
+.sheet th.dcol small{color:var(--muted);font-size:12px;font-weight:500}
+.sheet .name{position:sticky;left:0;z-index:1;background:var(--card);text-align:left;padding:0 12px 0 10px;min-width:170px;max-width:230px;border-right:2px solid var(--no);white-space:nowrap}
+.sheet thead .name{z-index:3}
+.sheet .name .nm{display:flex;align-items:center;gap:6px;overflow:hidden}
+.sheet .name .nm span.t{overflow:hidden;text-overflow:ellipsis}
+.sheet .num{color:var(--muted);font-size:12.5px;width:20px;flex:none;text-align:right}
+.badge{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--guestbg);color:var(--guest);flex:none}
+.sheet td.tot{min-width:54px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--card)}
+.sheet .today{background:var(--hl)}
+.sheet thead th.today{box-shadow:inset 0 -3px 0 var(--hl-line)}
+.cell{width:100%;height:100%;min-height:46px;border:0;background:transparent;cursor:pointer;font-family:Kalam,"Comic Sans MS",cursive;font-size:30px;line-height:1;padding-top:6px}
+.cell:hover{background:var(--brand-soft)}
+.cell.p{color:var(--ok)}
+.cell.m{color:var(--no)}
+.cell[disabled]{cursor:default}
+.cell[disabled]:hover{background:transparent}
+.sheet tfoot td{height:38px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--card)}
+.sheet tfoot .name{font-weight:600;color:var(--muted)}
+.msgb{border:0;background:none;cursor:pointer;color:#1F9D55;font-size:17px;padding:4px;margin-left:auto;flex:none}
+.sheet-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.legend b{font-family:Kalam,cursive;font-size:22px;line-height:0;position:relative;top:3px}
+.lock{margin:12px 16px 0;padding:10px 12px;border-radius:8px;background:var(--brand-soft);font-size:14px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+
+/* lists */
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule)}
+.list li:last-child{border-bottom:0}
+.list .grow{flex:1;min-width:0}
+.list .grow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list .time{font-variant-numeric:tabular-nums;font-weight:700;width:52px;flex:none}
+.list li.clickable{cursor:pointer}
+.list li.clickable:hover{background:var(--paper)}
+.pill{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.no{background:var(--nobg);color:var(--no)}
+.pill.wait{background:var(--brand-soft);color:var(--brand)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 4px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.stat b{display:block;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:13.5px;color:var(--muted)}
+.stat.alert b{color:var(--no)}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.guests{margin:18px 0 22px;padding:14px 16px 16px;border:1px solid var(--guest);border-radius:var(--r);background:var(--guestbg)}
+.guests h2{margin:0 0 2px;color:var(--guest)}
+.guests .panel{border-color:var(--line)}
+.guestrow{flex-wrap:wrap}
+.guestrow .grow{min-width:180px}
+.daynav{display:flex;align-items:center;gap:8px}
+.daynav h1{margin:0;font-size:24px}
+.cols{display:grid;grid-template-columns:1.25fr 1fr;gap:20px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filters .in{width:auto;min-width:150px;flex:1}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(12,20,40,.45)}
+.sheetbox{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.modal{align-items:center}.sheetbox{border-radius:14px}}
+.sheetbox h2{margin-right:40px}
+.mclose{float:right;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted)}
+.mact{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);max-width:90vw}
+.qrow.sent{opacity:.55}
+.note{font-size:13.5px;color:var(--muted);margin-top:8px}
+@media (prefers-reduced-motion:no-preference){.cell{transition:background .12s}}
+</style>
+</head>
+<body>
+<div id="app"><main><p class="muted">Yükleniyor…</p></main></div>
+<div id="modal"></div>
+<div id="toast" class="toast hidden" role="status"></div>
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const GUN=["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
+const GUN_UZUN=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+const DAY_ORDER=[6,0,1,2,3,4,5];
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ymOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const parseYmd=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
+const TODAY=ymd(new Date());
+const THIS_MONTH=ymOf(new Date());
+const fmtDate=s=>{const d=parseYmd(s);return `${d.getDate()} ${AY[d.getMonth()]} ${GUN_UZUN[d.getDay()]}`};
+const fmtShort=s=>{const d=parseYmd(s);return `${d.getDate()} ${AY[d.getMonth()]}`};
+const monthLabel=m=>{const[y,mm]=m.split("-").map(Number);return `${AY[mm-1]} ${y}`};
+const shiftMonth=(m,k)=>{const[y,mm]=m.split("-").map(Number);return ymOf(new Date(y,mm-1+k,1))};
+const daysLabel=days=>DAY_ORDER.filter(d=>(days||[]).includes(d)).map(d=>GUN[d]).join("–");
+const trSort=(a,b)=>a.localeCompare(b,"tr");
+function lessonDates(g,month){
+  const[y,m]=month.split("-").map(Number);const n=new Date(y,m,0).getDate();const out=[];
+  for(let i=1;i<=n;i++){const d=new Date(y,m-1,i);if((g.days||[]).includes(d.getDay()))out.push(ymd(d))}
+  return out;
+}
+function normPhone(p){
+  let d=String(p||"").replace(/\D/g,"");
+  if(!d)return "";
+  if(d.startsWith("00"))d=d.slice(2);
+  if(d.startsWith("0"))d="90"+d.slice(1);
+  else if(d.length===10&&d.startsWith("5"))d="90"+d;
+  return d;
+}
+const waLink=(p,t)=>`https://wa.me/${normPhone(p)}?text=${encodeURIComponent(t)}`;
+const smsLink=(p,t)=>`sms:+${normPhone(p)}?body=${encodeURIComponent(t)}`;
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.remove("hidden");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.add("hidden"),2600)}
+
+/* ---------- state ---------- */
+/* ============================================================
+   SUPABASE AYARLARI
+   Aşağıdaki iki satıra kendi projenizin bilgilerini yazabilirsiniz.
+   Boş bırakırsanız uygulama ilk açılışta size sorar ve tarayıcıya kaydeder.
+   Supabase > Project Settings > API sayfasında bulunur.
+   ============================================================ */
+var SUPABASE_URL = "";
+var SUPABASE_KEY = "";   // anon / publishable key
+
+const S={
+  sb:null,cfg:null,dl:null,ready:false,connErr:"",months:{},
+  teachers:{},groups:{},students:{},att:{},logs:[],settings:{adminPin:"9999"},
+  loaded:{},session:null,
+  ui:{tab:"bugun",date:null,groupId:null,month:THIS_MONTH,tGroup:null,tMonth:THIS_MONTH,
+      filterT:"",filterH:"",q:"",qGroup:"",loginT:null,
+      msg:{scope:"absent",groupId:"",to:"veli",tpl:"devam",text:null,sent:{}}}
+};
+try{S.session=JSON.parse(localStorage.getItem("sem_session")||"null")}catch(e){}
+function saveSession(){try{S.session?localStorage.setItem("sem_session",JSON.stringify(S.session)):localStorage.removeItem("sem_session")}catch(e){}}
+
+const teacherName=id=>S.teachers[id]?.name||"—";
+const sortedGroups=()=>Object.values(S.groups).sort((a,b)=>(a.start||"").localeCompare(b.start||"")||trSort(a.name,b.name));
+const groupStudents=gid=>Object.values(S.students).filter(s=>s.groupId===gid&&s.active!==false)
+  .sort((a,b)=>(a.guest&&!a.approved?1:0)-(b.guest&&!b.approved?1:0)||trSort(a.name,b.name));
+const attId=(gid,m)=>`${gid}_${m}`;
+function markOf(gid,sid,date){return S.att[attId(gid,date.slice(0,7))]?.marks?.[sid]?.[date]||""}
+function groupTaken(gid,date){const mk=S.att[attId(gid,date.slice(0,7))]?.marks||{};return Object.values(mk).some(o=>o&&o[date])}
+const gLabel=g=>g?`${g.name} (${g.start}–${g.end})`:"—";
+
+/* ---------- yoklama yazma (her hücre ayrı satır) ---------- */
+let wchain=Promise.resolve();
+function setMark(gid,sid,date,val){
+  putMark(gid,sid,date,val);
+  wchain=wchain.then(async()=>{
+    try{
+      const r=val
+        ?await S.sb.from("attendance").upsert({student_id:sid,group_id:gid,date,mark:val,updated_at:new Date().toISOString()},{onConflict:"student_id,date"})
+        :await S.sb.from("attendance").delete().eq("student_id",sid).eq("date",date);
+      if(r.error)throw r.error;
+    }catch(e){toast("Kaydedilemedi: "+(e.message||"bağlantı hatası"))}
+  });
+}
+
+/* ---------- Supabase bağlantısı ---------- */
+function readCfg(){
+  try{
+    const m=(location.hash||"").match(/kur=([^&]+)/);
+    if(m){
+      const c=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+      if(c&&c.url&&c.key){localStorage.setItem("sem_cfg",JSON.stringify(c));history.replaceState(null,"",location.pathname+location.search);return c}
+    }
+  }catch(e){}
+  if(SUPABASE_URL&&SUPABASE_KEY)return{url:SUPABASE_URL,key:SUPABASE_KEY};
+  try{return JSON.parse(localStorage.getItem("sem_cfg")||"null")}catch(e){return null}
+}
+function setupLink(){
+  const b=btoa(unescape(encodeURIComponent(JSON.stringify(S.cfg))));
+  return location.origin+location.pathname+"#kur="+encodeURIComponent(b);
+}
+const fromT=r=>({id:r.id,name:r.name,phone:r.phone||""});
+const fromG=r=>({id:r.id,name:r.name,teacherId:r.teacher_id||"",days:r.days||[],start:r.start_time||"",end:r.end_time||""});
+const fromS=r=>({id:r.id,name:r.name,groupId:r.group_id||"",parentName:r.parent_name||"",parentPhone:r.parent_phone||"",
+  studentPhone:r.student_phone||"",guest:!!r.guest,approved:r.approved!==false,addedBy:r.added_by||"",active:r.active!==false,createdAt:r.created_at||""});
+const MAP={teachers:fromT,groups:fromG,students:fromS};
+
+function putMark(gid,sid,date,mark){
+  const id=gid+"_"+String(date).slice(0,7);
+  const doc=S.att[id]||(S.att[id]={groupId:gid,month:String(date).slice(0,7),marks:{}});
+  const m=doc.marks[sid]||(doc.marks[sid]={});
+  if(mark)m[date]=mark;else delete m[date];
+}
+function dropMark(sid,date){
+  const mo=String(date).slice(0,7);
+  for(const id in S.att){if(id.endsWith("_"+mo)&&S.att[id].marks[sid])delete S.att[id].marks[sid][date]}
+}
+async function reload(t){
+  const{data,error}=await S.sb.from(t).select("*");
+  if(error){toast(t+" yüklenemedi");return}
+  const o={};data.forEach(r=>{const x=MAP[t](r);o[x.id]=x});
+  S[t]=o;schedule();
+}
+async function loadMonth(m){
+  if(S.months[m])return;S.months[m]="yuk";
+  const[y,mm]=m.split("-").map(Number);const last=new Date(y,mm,0).getDate();
+  const{data,error}=await S.sb.from("attendance").select("student_id,group_id,date,mark").gte("date",`${m}-01`).lte("date",`${m}-${pad(last)}`);
+  if(error){S.months[m]=false;toast("Yoklama yüklenemedi");return}
+  data.forEach(r=>putMark(r.group_id,r.student_id,String(r.date).slice(0,10),r.mark));
+  S.months[m]=true;schedule();
+}
+function ensureMonth(m){if(!S.months[m])loadMonth(m)}
+
+/* ---------- boot ---------- */
+let rq=false;
+function schedule(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;render()})}
+async function boot(){
+  S.cfg=readCfg();
+  if(!S.cfg){S.ready=true;render();return}
+  if(!window.supabase||!window.supabase.createClient){S.connErr="Supabase kitaplığı yüklenemedi. İnternet bağlantınızı kontrol edip sayfayı yenileyin.";S.ready=true;render();return}
+  try{S.sb=window.supabase.createClient(S.cfg.url,S.cfg.key)}
+  catch(e){S.connErr="Bağlantı kurulamadı: "+(e.message||"");S.ready=true;render();return}
+  const[t,g,s,se]=await Promise.all([
+    S.sb.from("teachers").select("*"),S.sb.from("groups").select("*"),
+    S.sb.from("students").select("*"),S.sb.from("settings").select("*")]);
+  const bad=[t,g,s,se].find(r=>r.error);
+  if(bad){
+    const msg=String(bad.error.message||"");
+    S.connErr=/relation|does not exist|schema/i.test(msg)
+      ?"Tablolar bulunamadı. Supabase'de 1-supabase-kurulum.sql dosyasını çalıştırdınız mı?"
+      :"Veritabanına ulaşılamadı: "+msg;
+    S.ready=true;render();return;
+  }
+  const fill=(k,rows)=>{const o={};rows.forEach(r=>{const x=MAP[k](r);o[x.id]=x});S[k]=o};
+  fill("teachers",t.data);fill("groups",g.data);fill("students",s.data);
+  (se.data||[]).forEach(r=>{if(r.key==="admin_pin")S.settings.adminPin=r.value});
+  S.ready=true;render();
+  loadMonth(THIS_MONTH);loadMonth(shiftMonth(THIS_MONTH,-1));
+  S.sb.from("msglog").select("*").order("at",{ascending:false}).limit(60)
+    .then(({data})=>{if(data){S.logs=data.map(r=>({id:r.id,at:r.at,name:r.name,to:r.target,channel:r.channel,text:r.body}));schedule()}});
+  S.sb.channel("sem-yoklama")
+    .on("postgres_changes",{event:"*",schema:"public",table:"attendance"},p=>{
+      const r=p.eventType==="DELETE"?p.old:p.new;if(!r||!r.student_id)return;
+      const d=String(r.date).slice(0,10);
+      if(p.eventType==="DELETE"){r.group_id?putMark(r.group_id,r.student_id,d,""):dropMark(r.student_id,d)}
+      else putMark(r.group_id,r.student_id,d,r.mark);
+      schedule();
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"students"},()=>reload("students"))
+    .on("postgres_changes",{event:"*",schema:"public",table:"groups"},()=>reload("groups"))
+    .on("postgres_changes",{event:"*",schema:"public",table:"teachers"},()=>reload("teachers"))
+    .subscribe();
+}
+boot();
+
+/* ---------- render ---------- */
+function render(){
+  const app=$("#app");
+  const ae=document.activeElement;const keep=ae&&ae.dataset?ae.dataset.keep:null;const caret=keep&&ae.selectionStart;
+  if(!S.ready){app.innerHTML=`<main><p class="muted">Yükleniyor…</p></main>`;return}
+  if(!S.cfg){app.innerHTML=setupView();return}
+  if(S.connErr){app.innerHTML=`${topBar("","Bağlantı")}</header><main><div class="login"><div class="panel pad"><h2>Bağlanılamadı</h2><p>${esc(S.connErr)}</p><div class="mact"><button class="btn" data-act="resetCfg">Bağlantı ayarlarını sıfırla</button><button class="btn primary" data-act="reloadPage">Tekrar dene</button></div></div></div></main>`;return}
+  const s=S.session;
+  if(s&&s.role==="teacher"&&!S.teachers[s.teacherId]){S.session=null;saveSession()}
+  if(!S.session)app.innerHTML=loginView();
+  else if(S.session.role==="admin")app.innerHTML=adminView();
+  else app.innerHTML=teacherView();
+  if(keep){const el=app.querySelector(`[data-keep="${keep}"]`);if(el){el.focus();try{el.setSelectionRange(caret,caret)}catch(e){}}}
+}
+
+function topBar(right,sub){
+  return `<header class="bar"><div class="bar-in">
+    <div class="logo"><div class="logo-mark">+</div><div style="min-width:0"><span>Sarıyer Eğitim Merkezi</span><small>${esc(sub)}</small></div></div>
+    <div class="sp"></div>${right}</div>`;
+}
+
+/* ---------- ilk kurulum ---------- */
+function setupView(){
+  return `${topBar("","Kurulum")}</header>
+  <main><div class="login">
+    <h1>Bağlantı kurulumu</h1>
+    <p class="lead">Bu ekran yalnızca bir kez, ilk açılışta çıkar. Supabase projenizin adresini ve anahtarını girin; Supabase panelinde <b>Project Settings &rsaquo; API</b> sayfasında bulunur.</p>
+    <div class="panel pad">
+      <label class="f" for="cfgUrl">Project URL</label>
+      <input id="cfgUrl" class="in" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off" spellcheck="false">
+      <label class="f" for="cfgKey">Anon / publishable key</label>
+      <textarea id="cfgKey" class="in" style="min-height:80px" placeholder="eyJhbGciOi... veya sb_publishable_..." autocomplete="off" spellcheck="false"></textarea>
+      <div class="mact"><button class="btn primary" data-act="saveCfg">Bağlan</button></div>
+      <p class="note">Bilgiler yalnızca bu cihazın tarayıcısına kaydedilir. Kaydettikten sonra Ayarlar sekmesinden diğer cihazlar için kurulum linki alabilirsiniz.</p>
+    </div>
+  </div></main>`;
+}
+
+/* ---------- login ---------- */
+function loginView(){
+  const ts=Object.values(S.teachers).sort((a,b)=>trSort(a.name,b.name));
+  return `${topBar("","Yoklama defteri")}</header>
+  <main><div class="login">
+    <h1>Yoklama defteri</h1>
+    <p class="lead">Hafta sonu grup dersleri. Öğretmenler kendi sınıflarının yoklamasını, yönetici tüm sınıfları görür.</p>
+    <section class="panel pad">
+      <h2>Öğretmen girişi</h2>
+      <p class="muted small" style="margin-top:0">Adınıza dokunun, doğrudan kendi sınıflarınıza girersiniz.</p>
+      ${ts.length?`<div class="tlist">${ts.map(t=>{
+        const n=Object.values(S.groups).filter(g=>g.teacherId===t.id).length;
+        return `<button class="tbtn" data-act="pickT" data-id="${t.id}">${esc(t.name)} Hoca<small>${n} sınıf</small></button>`}).join("")}</div>`
+      :`<p class="muted">Henüz öğretmen eklenmemiş. Yönetici, Ayarlar sekmesinden öğretmen ekleyebilir.</p>`}
+    </section>
+    <section class="panel pad section">
+      <h2>Yönetici</h2>
+      <label class="f" for="apin">Yönetici şifresi</label><input id="apin" class="in pin" inputmode="numeric" maxlength="8" autocomplete="off" data-enter="loginA">
+      <div class="mact"><button class="btn primary" data-act="loginA">Giriş yap</button></div>
+    </section>
+  </div></main>`;
+}
+
+/* ---------- the sheet (paper-style attendance) ---------- */
+function focusDateFor(dates){
+  if(dates.includes(TODAY))return TODAY;
+  const past=dates.filter(d=>d<=TODAY);return past.length?past[past.length-1]:null;
+}
+function sheetHTML(g,month,opts){
+  const admin=!!opts.admin;
+  const dates=lessonDates(g,month);
+  const studs=groupStudents(g.id);
+  const locked=!admin&&month<THIS_MONTH;
+  const fd=focusDateFor(dates);
+  const mk=S.att[attId(g.id,month)]?.marks||{};
+  const head=`<div class="sheet-head">
+      <div><h2>${esc(g.name)}</h2><div class="muted small">${esc(teacherName(g.teacherId))} Hoca, ${daysLabel(g.days)} ${esc(g.start)}–${esc(g.end)}</div></div>
+      <div class="monthnav"><button class="iconbtn" aria-label="Önceki ay" data-act="month" data-k="-1">‹</button><b>${monthLabel(month)}</b><button class="iconbtn" aria-label="Sonraki ay" data-act="month" data-k="1">›</button></div>
+    </div>${locked?`<div class="lock">Geçmiş ayların yoklaması kilitli. Düzeltme gerekirse yöneticiye haber verin.</div>`:""}`;
+  if(!dates.length)return `<div class="panel">${head}<div class="empty">Bu sınıfın ders günü tanımlı değil.</div></div>`;
+  let rows="";
+  studs.forEach((s,i)=>{
+    const guest=s.guest&&!s.approved;
+    let plus=0;
+    const cells=dates.map(d=>{
+      const v=mk[s.id]?.[d]||"";if(v==="+")plus++;
+      return `<td class="${d===fd?"today":""}"><button class="cell ${v==="+"?"p":v==="-"?"m":""}" data-act="tog" data-g="${g.id}" data-s="${s.id}" data-d="${d}" ${locked?"disabled":""} aria-label="${esc(s.name)} ${fmtShort(d)}: ${v==="+"?"geldi":v==="-"?"gelmedi":"boş"}">${v==="+"?"+":v==="-"?"−":""}</button></td>`;
+    }).join("");
+    rows+=`<tr><td class="name"><div class="nm"><span class="num">${i+1}</span><span class="t">${esc(s.name)}</span>${guest?`<span class="badge">Misafir</span>`:""}${admin?`<button class="msgb" data-act="msgStu" data-id="${s.id}" data-d="${fd||""}" aria-label="${esc(s.name)} için mesaj">✉</button>`:""}</div></td>${cells}<td class="tot">${plus}</td></tr>`;
+  });
+  const foot=dates.map(d=>{
+    let p=0,m=0;studs.forEach(s=>{const v=mk[s.id]?.[d];if(v==="+")p++;else if(v==="-")m++});
+    return `<td class="${d===fd?"today":""}">${p||m?`${p}/${p+m}`:"–"}</td>`}).join("");
+  return `<div class="panel">${head}
+    ${studs.length?`<div class="sheet-wrap"><table class="sheet">
+      <thead><tr><th class="name">Öğrenci (${studs.length})</th>${dates.map(d=>{const dd=parseYmd(d);
+        return `<th class="dcol ${d===fd?"today":""}"><button data-act="colAll" data-g="${g.id}" data-d="${d}" ${locked?"disabled":""} title="Boş kutuları + yap"><b>${dd.getDate()}</b><small>${GUN[dd.getDay()]}</small></button></th>`}).join("")}<th>Top.</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td class="name">Gelen / işaretli</td>${foot}<td></td></tr></tfoot>
+    </table></div>`:`<div class="empty">Bu sınıfta öğrenci yok. Aşağıdan misafir öğrenci ekleyerek başlayabilirsiniz.</div>`}
+    <div class="sheet-foot">
+      <div class="legend"><span><b style="color:var(--ok)">+</b> geldi</span><span><b style="color:var(--no)">−</b> gelmedi</span><span>Kutuya dokun: boş, +, −. Tarihe dokun: boşları + yap.</span></div>
+      <div class="row">${admin?`<button class="btn sm" data-act="csv" data-g="${g.id}">Excel'e aktar</button>`:""}
+      ${locked?"":`<button class="btn ${admin?"sm":"primary"}" data-act="addGuest" data-g="${g.id}" data-d="${fd||""}">+ Misafir öğrenci ekle</button>`}</div>
+    </div></div>`;
+}
+
+/* ---------- teacher panel ---------- */
+function teacherView(){
+  const t=S.teachers[S.session.teacherId];
+  const gs=sortedGroups().filter(g=>g.teacherId===t.id);
+  if(!gs.find(g=>g.id===S.ui.tGroup)){
+    const todayDow=new Date().getDay();
+    S.ui.tGroup=(gs.find(g=>(g.days||[]).includes(todayDow))||gs[0]||{}).id||null;
+  }
+  const g=S.groups[S.ui.tGroup];
+  ensureMonth(S.ui.tMonth);
+  return `${topBar(`<button class="btn sm ghost" data-act="logout">Çıkış</button>`,t.name+" Hoca")}</header>
+  <main>
+    ${gs.length>1?`<div class="chips" role="group" aria-label="Sınıflarım">${gs.map(x=>`<button class="chip" data-act="tGroup" data-id="${x.id}" aria-pressed="${x.id===S.ui.tGroup}">${esc(x.name)}<small>${daysLabel(x.days)} ${esc(x.start)}–${esc(x.end)}</small></button>`).join("")}</div><div style="height:14px"></div>`:""}
+    ${g?sheetHTML(g,S.ui.tMonth,{admin:false}):`<div class="panel empty">Size atanmış sınıf yok. Yöneticinizle görüşün.</div>`}
+  </main>`;
+}
+
+/* ---------- admin panel ---------- */
+function allLessonDays(){const s=new Set();Object.values(S.groups).forEach(g=>(g.days||[]).forEach(d=>s.add(d)));return s}
+function defaultAdminDate(){
+  const days=allLessonDays();if(!days.size)return TODAY;
+  const d=new Date();for(let i=0;i<14;i++){if(days.has(d.getDay()))return ymd(d);d.setDate(d.getDate()-1)}return TODAY;
+}
+function stepLessonDay(date,k){
+  const days=allLessonDays();if(!days.size)return date;
+  const d=parseYmd(date);for(let i=0;i<14;i++){d.setDate(d.getDate()+k);if(days.has(d.getDay()))return ymd(d)}return date;
+}
+function absenteesOn(date){
+  const dow=parseYmd(date).getDay();const out=[];
+  sortedGroups().filter(g=>(g.days||[]).includes(dow)).forEach(g=>groupStudents(g.id).forEach(s=>{if(markOf(g.id,s.id,date)==="-")out.push({s,g})}));
+  return out;
+}
+function streakAlerts(){
+  const out=[];
+  Object.values(S.groups).forEach(g=>{
+    const dates=[...lessonDates(g,shiftMonth(THIS_MONTH,-1)),...lessonDates(g,THIS_MONTH)].filter(d=>d<=TODAY&&groupTaken(g.id,d));
+    const last2=dates.slice(-2);if(last2.length<2)return;
+    groupStudents(g.id).forEach(s=>{if(last2.every(d=>markOf(g.id,s.id,d)==="-"))out.push({s,g,d:last2[1]})});
+  });
+  return out;
+}
+const pendingGuests=()=>Object.values(S.students).filter(s=>s.guest&&!s.approved&&s.active!==false).sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+
+function adminView(){
+  if(!S.ui.date)S.ui.date=defaultAdminDate();
+  ensureMonth(S.ui.date.slice(0,7));if(S.ui.tab==="siniflar")ensureMonth(S.ui.month);
+  const pg=pendingGuests().length;
+  const tabs=[["bugun","Bugün"],["siniflar","Sınıflar"],["ogrenciler","Öğrenciler"],["mesajlar","Mesajlar"],["ayarlar","Ayarlar"]];
+  let body="";
+  if(S.ui.tab==="bugun")body=viewToday();
+  else if(S.ui.tab==="siniflar")body=viewClasses();
+  else if(S.ui.tab==="ogrenciler")body=viewStudents();
+  else if(S.ui.tab==="mesajlar")body=viewMessages();
+  else body=viewSettings();
+  return `${topBar(`<button class="btn sm ghost" data-act="logout">Çıkış</button>`,"Yönetici paneli")}
+    <nav class="tabs">${tabs.map(([k,l])=>`<button class="tab" data-act="tab" data-k="${k}" aria-current="${S.ui.tab===k}">${l}${k==="bugun"&&pg?`<span class="count">${pg}</span>`:""}</button>`).join("")}</nav></header>
+    <main>${body}</main>`;
+}
+
+function viewToday(){
+  const date=S.ui.date;const dow=parseYmd(date).getDay();
+  const gs=sortedGroups().filter(g=>(g.days||[]).includes(dow));
+  let taken=0,pres=0,abs=0;
+  const rows=gs.map(g=>{
+    const studs=groupStudents(g.id);let p=0,m=0;
+    studs.forEach(s=>{const v=markOf(g.id,s.id,date);if(v==="+")p++;else if(v==="-")m++});
+    const tk=p+m>0;if(tk)taken++;pres+=p;abs+=m;
+    const pill=tk?(m?`<span class="pill no">${p} geldi, ${m} gelmedi</span>`:`<span class="pill ok">${p} geldi</span>`):(date>TODAY?`<span class="pill wait">Ders günü</span>`:`<span class="pill no">Yoklama alınmadı</span>`);
+    return `<li class="clickable" data-act="openGroup" data-id="${g.id}" data-m="${date.slice(0,7)}"><span class="time">${esc(g.start)}</span><div class="grow"><b>${esc(g.name)}</b><span class="muted small">${esc(teacherName(g.teacherId))} Hoca, ${studs.length} öğrenci</span></div>${pill}</li>`;
+  }).join("");
+  const absList=absenteesOn(date);
+  const streak=streakAlerts();
+  const guests=pendingGuests();
+  return `<div class="daynav"><button class="iconbtn" data-act="day" data-k="-1" aria-label="Önceki ders günü">‹</button><h1>${fmtDate(date)}</h1><button class="iconbtn" data-act="day" data-k="1" aria-label="Sonraki ders günü">›</button></div>
+  <div class="stats">
+    <div class="stat"><b>${taken}/${gs.length}</b><span>sınıfın yoklaması alındı</span></div>
+    <div class="stat"><b>${pres}</b><span>öğrenci geldi</span></div>
+    <div class="stat ${abs?"alert":""}"><b>${abs}</b><span>öğrenci gelmedi</span></div>
+    <div class="stat ${streak.length?"alert":""}"><b>${streak.length}</b><span>üst üste 2 derse gelmedi</span></div>
+  </div>
+  <div class="cols section" style="margin-top:18px">
+    <div>
+      <h2>Bu günün dersleri</h2>
+      <div class="panel">${gs.length?`<ul class="list">${rows}</ul>`:`<div class="empty">Bu gün ders yok.</div>`}</div>
+      <div class="section">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Gelmeyenler</h2>${absList.length?`<button class="btn sm wa" data-act="bulkAbsent">Velilere mesaj hazırla</button>`:""}</div>
+        <div class="panel">${absList.length?`<ul class="list">${absList.map(({s,g})=>`<li><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(g.name)} ${esc(g.start)}, ${esc(teacherName(g.teacherId))} Hoca</span></div><button class="btn sm" data-act="msgStu" data-id="${s.id}" data-d="${date}">Mesaj</button></li>`).join("")}</ul>`:`<div class="empty">Bu gün için "−" işaretli öğrenci yok.</div>`}</div>
+      </div>
+    </div>
+    <div>
+      <h2>Onay bekleyen misafirler</h2>
+      <div class="panel">${guests.length?`<ul class="list">${guests.map(s=>`<li><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(gLabel(S.groups[s.groupId]))}, ekleyen ${esc(teacherName(s.addedBy))} Hoca${s.createdAt?", "+fmtShort(s.createdAt.slice(0,10)):""}</span></div><button class="btn sm primary" data-act="approve" data-id="${s.id}">Kayda al</button><button class="btn sm danger" data-act="delStu" data-id="${s.id}">Sil</button></li>`).join("")}</ul>`:`<div class="empty">Bekleyen misafir öğrenci yok.</div>`}</div>
+      <div class="section">
+        <h2>Dikkat edilmesi gerekenler</h2>
+        <div class="panel">${streak.length?`<ul class="list">${streak.map(({s,g})=>`<li><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(g.name)}, son 2 derse gelmedi</span></div><button class="btn sm" data-act="msgStu" data-id="${s.id}" data-tpl="ust">Veliye yaz</button></li>`).join("")}</ul>`:`<div class="empty">Üst üste 2 derse gelmeyen öğrenci yok.</div>`}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function viewClasses(){
+  const g=S.groups[S.ui.groupId];
+  if(g)return `<div class="row" style="margin-bottom:12px"><button class="btn sm" data-act="closeGroup">‹ Tüm sınıflar</button><button class="btn sm" data-act="editGroup" data-id="${g.id}">Adı ve saati düzenle</button><button class="btn sm wa" data-act="bulkGroup" data-g="${g.id}">Bu sınıfa mesaj</button></div>${sheetHTML(g,S.ui.month,{admin:true})}`;
+  const ts=Object.values(S.teachers).sort((a,b)=>trSort(a.name,b.name));
+  const hours=[...new Set(Object.values(S.groups).map(x=>x.start))].sort();
+  const gs=sortedGroups().filter(x=>(!S.ui.filterT||x.teacherId===S.ui.filterT)&&(!S.ui.filterH||x.start===S.ui.filterH));
+  const d=defaultAdminDate();
+  return `<div class="row" style="justify-content:space-between"><h1>Sınıflar</h1><div class="row"><button class="btn" data-act="editTeacher">+ Öğretmen ekle</button><button class="btn primary" data-act="editGroup">+ Sınıf ekle</button></div></div><p class="muted" style="margin-top:0">${Object.keys(S.groups).length} sınıf, ${Object.values(S.students).filter(s=>s.active!==false).length} öğrenci</p>
+  <div class="filters">
+    <select class="in" data-on="filterT" aria-label="Öğretmen"><option value="">Tüm öğretmenler</option>${ts.map(t=>`<option value="${t.id}" ${S.ui.filterT===t.id?"selected":""}>${esc(t.name)} Hoca</option>`).join("")}</select>
+    <select class="in" data-on="filterH" aria-label="Saat"><option value="">Tüm saatler</option>${hours.map(h=>`<option ${S.ui.filterH===h?"selected":""}>${esc(h)}</option>`).join("")}</select>
+  </div>
+  <div class="panel"><ul class="list">${gs.map(x=>{
+    const n=groupStudents(x.id).length;
+    const tk=(x.days||[]).includes(parseYmd(d).getDay())&&groupTaken(x.id,d);
+    return `<li class="clickable" data-act="openGroup" data-id="${x.id}" data-m="${THIS_MONTH}"><span class="time">${esc(x.start)}</span><div class="grow"><b>${esc(x.name)}</b><span class="muted small">${esc(teacherName(x.teacherId))} Hoca, ${daysLabel(x.days)} ${esc(x.start)}–${esc(x.end)}</span></div><span class="muted small">${n} öğr.</span>${tk?`<span class="pill ok">Son ders alındı</span>`:""}<button class="btn sm" data-act="editGroup" data-id="${x.id}">Düzenle</button></li>`}).join("")||`<li class="muted">Filtreye uyan sınıf yok.</li>`}</ul></div>`;
+}
+
+function monthStats(s,month){
+  const g=S.groups[s.groupId];if(!g)return{p:0,m:0};
+  let p=0,m=0;lessonDates(g,month).forEach(d=>{const v=markOf(g.id,s.id,d);if(v==="+")p++;else if(v==="-")m++});return{p,m};
+}
+function viewStudents(){
+  const q=S.ui.q.trim().toLocaleLowerCase("tr");
+  const list=Object.values(S.students).filter(s=>s.active!==false&&(!S.ui.qGroup||s.groupId===S.ui.qGroup)&&(!q||s.name.toLocaleLowerCase("tr").includes(q)||(s.parentName||"").toLocaleLowerCase("tr").includes(q)||String(s.parentPhone||"").replace(/\D/g,"").includes(q.replace(/\D/g,"")||"§")))
+    .sort((a,b)=>trSort(a.name,b.name));
+  const guests=list.filter(s=>s.guest&&!s.approved);
+  const normal=list.filter(s=>!(s.guest&&!s.approved));
+  const row=s=>{
+    const st=monthStats(s,THIS_MONTH);const t=st.p+st.m;const pct=t?Math.round(st.p*100/t):null;
+    return `<li class="clickable" data-act="editStu" data-id="${s.id}"><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(gLabel(S.groups[s.groupId]))}${s.parentName?", veli "+esc(s.parentName):""}</span></div>${pct===null?`<span class="muted small">–</span>`:`<span class="pill ${pct<70?"no":"ok"}">%${pct}</span>`}</li>`;
+  };
+  const grow=s=>{
+    const gd=S.groups[s.groupId];const st=monthStats(s,THIS_MONTH);
+    return `<li class="guestrow"><div class="grow"><b>${esc(s.name)} <span class="badge">Misafir</span></b><span class="muted small">${esc(gLabel(gd))}, ${esc(teacherName(gd?.teacherId))} Hoca${st.p?", "+st.p+" derse geldi":""}${s.addedBy?" · ekleyen "+esc(teacherName(s.addedBy))+" Hoca":""}</span></div>
+      <button class="btn sm" data-act="editStu" data-id="${s.id}">Bilgileri</button>
+      <button class="btn sm primary" data-act="approve" data-id="${s.id}">Kayda al</button>
+      <button class="btn sm danger" data-act="delStu" data-id="${s.id}">Sil</button></li>`;
+  };
+  return `<div class="row" style="justify-content:space-between"><h1>Öğrenciler</h1><button class="btn primary" data-act="newStu">+ Yeni öğrenci</button></div>
+  <div class="filters" style="margin-top:12px">
+    <input class="in" placeholder="İsim, veli adı veya telefon ara" value="${esc(S.ui.q)}" data-on="q" data-keep="q" aria-label="Ara">
+    <select class="in" data-on="qGroup" aria-label="Sınıf"><option value="">Tüm sınıflar</option>${sortedGroups().map(g=>`<option value="${g.id}" ${S.ui.qGroup===g.id?"selected":""}>${esc(gLabel(g))}</option>`).join("")}</select>
+  </div>
+  ${guests.length?`<section class="guests">
+    <h2>Misafir öğrenciler (${guests.length})</h2>
+    <p class="muted small" style="margin:0 0 10px">Öğretmenlerin derste eklediği yeni öğrenciler. "Kayda al" dediğinizde kalıcı öğrenci olur, "Sil" dediğinizde listeden çıkar.</p>
+    <div class="panel"><ul class="list">${guests.map(grow).join("")}</ul></div>
+  </section>`:""}
+  <p class="muted small">${normal.length} kayıtlı öğrenci. Devam oranı ${monthLabel(THIS_MONTH).toLocaleLowerCase("tr")} ayı içindir.</p>
+  <div class="panel"><ul class="list">${normal.map(row).join("")||`<li class="muted">Aramaya uyan öğrenci yok.</li>`}</ul></div>`;
+}
+
+/* ---------- messages ---------- */
+const TPL={
+  devam:{l:"Devamsızlık bildirimi",veli:"Sayın {veli}, öğrenciniz {ad} bugün ({tarih}) saat {saat} {grup} dersine katılmamıştır. Bilginize sunarız. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, bugün ({tarih}) saat {saat} dersinde seni göremedik. Bir sonraki derste görüşmek üzere. Sarıyer Eğitim Merkezi"},
+  ust:{l:"Üst üste devamsızlık",veli:"Sayın {veli}, öğrenciniz {ad} son iki derse katılmamıştır. Bir sorun varsa bizimle iletişime geçmenizi rica ederiz. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, son iki derste seni göremedik. Her şey yolunda mı? Sarıyer Eğitim Merkezi"},
+  hatir:{l:"Ders hatırlatma",veli:"Sayın {veli}, {ad} için {grup} dersi {gunler} günleri saat {saat}'dedir. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, dersimiz {gunler} saat {saat}'de. Görüşmek üzere! Sarıyer Eğitim Merkezi"},
+  bos:{l:"Serbest metin",veli:"Sayın {veli}, ",ogrenci:"Merhaba {ad}, "}
+};
+function fillTpl(text,s,date){
+  const g=S.groups[s.groupId]||{};
+  return text.replaceAll("{ad}",s.name).replaceAll("{veli}",s.parentName||"velimiz").replace("Sayın velimiz","Sayın velimiz")
+    .replaceAll("{grup}",g.name||"").replaceAll("{saat}",g.start||"").replaceAll("{gunler}",daysLabel(g.days))
+    .replaceAll("{ogretmen}",teacherName(g.teacherId)).replaceAll("{tarih}",date?fmtShort(date):fmtShort(TODAY));
+}
+function recipients(){
+  const m=S.ui.msg;
+  if(m.scope==="absent")return absenteesOn(S.ui.date).map(x=>x.s);
+  if(m.scope==="group")return m.groupId?groupStudents(m.groupId):[];
+  if(m.scope==="streak")return streakAlerts().map(x=>x.s);
+  return Object.values(S.students).filter(s=>s.active!==false).sort((a,b)=>trSort(a.name,b.name));
+}
+function viewMessages(){
+  const m=S.ui.msg;
+  if(m.text===null)m.text=TPL[m.tpl][m.to];
+  const rs=recipients();
+  const phoneOf=s=>m.to==="veli"?s.parentPhone:s.studentPhone;
+  const logs=S.logs.slice(0,40);
+  return `<h1>Mesajlar</h1>
+  <p class="muted" style="margin-top:0">Mesaj her kişi için WhatsApp'ta hazır açılır, siz gönder'e basarsınız. Toplu otomatik gönderim için ileride bir SMS sağlayıcısı bağlanabilir.</p>
+  <div class="cols">
+    <div class="panel pad">
+      <label class="f">Kime</label>
+      <select class="in" data-on="msgScope">
+        <option value="absent" ${m.scope==="absent"?"selected":""}>${fmtShort(S.ui.date)} günü gelmeyenler</option>
+        <option value="streak" ${m.scope==="streak"?"selected":""}>Üst üste 2 derse gelmeyenler</option>
+        <option value="group" ${m.scope==="group"?"selected":""}>Bir sınıfın tamamı</option>
+        <option value="all" ${m.scope==="all"?"selected":""}>Tüm öğrenciler</option>
+      </select>
+      ${m.scope==="group"?`<label class="f">Sınıf</label><select class="in" data-on="msgGroup"><option value="">Sınıf seçin</option>${sortedGroups().map(g=>`<option value="${g.id}" ${m.groupId===g.id?"selected":""}>${esc(gLabel(g))}, ${esc(teacherName(g.teacherId))}</option>`).join("")}</select>`:""}
+      <label class="f">Alıcı</label>
+      <div class="seg"><button data-act="msgTo" data-k="veli" aria-pressed="${m.to==="veli"}">Veli</button><button data-act="msgTo" data-k="ogrenci" aria-pressed="${m.to==="ogrenci"}">Öğrencinin kendisi</button></div>
+      <label class="f">Şablon</label>
+      <select class="in" data-on="msgTpl">${Object.entries(TPL).map(([k,v])=>`<option value="${k}" ${m.tpl===k?"selected":""}>${v.l}</option>`).join("")}</select>
+      <label class="f" for="mtext">Mesaj</label>
+      <textarea id="mtext" class="in" data-on="msgText" data-keep="mtext">${esc(m.text)}</textarea>
+      <p class="note">Kişiye özel alanlar: {ad}, {veli}, {grup}, {saat}, {gunler}, {tarih}, {ogretmen}</p>
+    </div>
+    <div>
+      <h2>Gönderim listesi (${rs.length})</h2>
+      <div class="panel">${rs.length?`<ul class="list">${rs.map(s=>{
+        const ph=phoneOf(s);const txt=fillTpl(m.text,s,S.ui.date);const sent=m.sent[m.to+":"+s.id];
+        return `<li class="qrow ${sent?"sent":""}"><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${ph?esc(ph):"Numara kayıtlı değil"}${sent?", açıldı":""}</span></div>
+        ${ph?`<a class="btn sm wa" href="${waLink(ph,txt)}" target="_blank" rel="noopener" data-log="${s.id}" data-ch="WhatsApp">WhatsApp</a><a class="btn sm" href="${smsLink(ph,txt)}" data-log="${s.id}" data-ch="SMS">SMS</a>`:`<button class="btn sm" data-act="editStu" data-id="${s.id}">Numara ekle</button>`}</li>`}).join("")}</ul>`:`<div class="empty">${m.scope==="group"&&!m.groupId?"Bir sınıf seçin.":"Bu seçimde kimse yok."}</div>`}</div>
+    </div>
+  </div>
+  <div class="section"><h2>Son gönderilenler</h2>
+    <div class="panel">${logs.length?`<ul class="list">${logs.map(l=>`<li><div class="grow"><b>${esc(l.name)} <span class="muted small">(${l.to==="veli"?"veli":"öğrenci"}, ${esc(l.channel||"")})</span></b><span class="muted small">${esc((l.text||"").slice(0,110))}${(l.text||"").length>110?"…":""}</span></div><span class="muted small">${l.at?fmtShort(l.at.slice(0,10))+" "+l.at.slice(11,16):""}</span></li>`).join("")}</ul>`:`<div class="empty">Henüz mesaj gönderilmedi.</div>`}</div>
+  </div>`;
+}
+
+/* ---------- settings ---------- */
+function viewSettings(){
+  const ts=Object.values(S.teachers).sort((a,b)=>trSort(a.name,b.name));
+  return `<h1>Ayarlar</h1>
+  <div class="cols section" style="margin-top:14px">
+    <div>
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Sınıflar</h2><button class="btn sm primary" data-act="editGroup">+ Sınıf ekle</button></div>
+      <div class="panel"><ul class="list">${sortedGroups().map(g=>`<li class="clickable" data-act="editGroup" data-id="${g.id}"><span class="time">${esc(g.start)}</span><div class="grow"><b>${esc(g.name)}</b><span class="muted small">${esc(teacherName(g.teacherId))} Hoca, ${daysLabel(g.days)} ${esc(g.start)}–${esc(g.end)}</span></div><span class="muted small">${groupStudents(g.id).length} öğr.</span></li>`).join("")||`<li class="muted">Henüz sınıf yok.</li>`}</ul></div>
+    </div>
+    <div>
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Öğretmenler</h2><button class="btn sm primary" data-act="editTeacher">+ Öğretmen ekle</button></div>
+      <div class="panel"><ul class="list">${ts.map(t=>`<li class="clickable" data-act="editTeacher" data-id="${t.id}"><div class="grow"><b>${esc(t.name)} Hoca</b><span class="muted small">${Object.values(S.groups).filter(g=>g.teacherId===t.id).length} sınıf${t.phone?", "+esc(t.phone):""}</span></div></li>`).join("")}</ul></div>
+      <div class="section panel pad">
+        <h2>Yönetici şifresi</h2>
+        <p class="muted small" style="margin-top:0">Yalnızca yönetici paneli için. Sayfanın sahibi olarak siz şifresiz girersiniz; başka bir hesapla girerken bu şifre sorulur. Öğretmenler şifre girmez.</p>
+        <div class="row"><input id="adminPin" class="in pin" style="max-width:180px" value="${esc(S.settings.adminPin||"")}" inputmode="numeric" maxlength="8"><button class="btn" data-act="saveAdminPin">Kaydet</button></div>
+      </div>
+      <div class="section panel pad">
+        <h2>Diğer cihazlar</h2>
+        <p class="muted small" style="margin-top:0">Öğretmenler sayfanın adresini açar. Bağlantı ayarı sayfaya gömülü değilse, aşağıdaki linki bir kez açmaları yeterlidir.</p>
+        <div class="row"><button class="btn" data-act="copyLink">Kurulum linkini kopyala</button><button class="btn" data-act="resetCfg">Bağlantıyı sıfırla</button></div>
+      </div>
+      <div class="section panel pad"><h2>Aylık rapor</h2><p class="muted small" style="margin-top:0">Tüm sınıfların ${monthLabel(THIS_MONTH).toLocaleLowerCase("tr")} yoklaması, Excel'de açılan tek dosya.</p><button class="btn" data-act="csv" data-g="">Tüm sınıfları indir</button></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- modal ---------- */
+function openModal(html){$("#modal").innerHTML=`<div class="modal" data-act="modalBg"><div class="sheetbox" role="dialog" aria-modal="true"><button class="mclose" data-act="closeModal" aria-label="Kapat">×</button>${html}</div></div>`;const f=$("#modal input,#modal select,#modal textarea");if(f)f.focus()}
+function closeModal(){$("#modal").innerHTML=""}
+const val=id=>($("#"+id)?.value||"").trim();
+
+function guestModal(gid,date){
+  openModal(`<h2>Misafir öğrenci ekle</h2><p class="muted small">${esc(gLabel(S.groups[gid]))}. Yönetici onaylayınca kalıcı kayda geçer.</p>
+  <label class="f" for="gName">Ad soyad</label><input id="gName" class="in" autocomplete="off">
+  <div class="grid2"><div><label class="f" for="gPar">Veli telefonu</label><input id="gPar" class="in" inputmode="tel" placeholder="05xx xxx xx xx"></div>
+  <div><label class="f" for="gStu">Öğrenci telefonu</label><input id="gStu" class="in" inputmode="tel" placeholder="İsteğe bağlı"></div></div>
+  ${date?`<label class="row" style="margin-top:14px;font-weight:600"><input type="checkbox" id="gMark" checked> ${fmtShort(date)} dersine + olarak işaretle</label>`:""}
+  <div class="mact"><button class="btn" data-act="closeModal">Vazgeç</button><button class="btn primary" data-act="saveGuest" data-g="${gid}" data-d="${date||""}">Ekle</button></div>`);
+}
+function studentModal(id){
+  const s=id?S.students[id]:{name:"",groupId:S.ui.qGroup||"",parentName:"",parentPhone:"",studentPhone:""};
+  const st=id?monthStats(s,THIS_MONTH):null;
+  openModal(`<h2>${id?esc(s.name):"Yeni öğrenci"}</h2>
+  ${id?`<p class="muted small">${s.guest&&!s.approved?`<span class="badge">Misafir</span> `:""}${monthLabel(THIS_MONTH)}: ${st.p} geldi, ${st.m} gelmedi</p>`:""}
+  <label class="f" for="sName">Ad soyad</label><input id="sName" class="in" value="${esc(s.name)}">
+  <label class="f" for="sGroup">Sınıf</label><select id="sGroup" class="in"><option value="">Sınıf seçin</option>${sortedGroups().map(g=>`<option value="${g.id}" ${s.groupId===g.id?"selected":""}>${esc(gLabel(g))}, ${esc(teacherName(g.teacherId))}</option>`).join("")}</select>
+  <label class="f" for="sPName">Veli adı</label><input id="sPName" class="in" value="${esc(s.parentName||"")}">
+  <div class="grid2"><div><label class="f" for="sPPhone">Veli telefonu</label><input id="sPPhone" class="in" inputmode="tel" value="${esc(s.parentPhone||"")}"></div>
+  <div><label class="f" for="sSPhone">Öğrenci telefonu</label><input id="sSPhone" class="in" inputmode="tel" value="${esc(s.studentPhone||"")}"></div></div>
+  ${id?`<div class="row" style="margin-top:16px"><button class="btn sm wa" data-act="msgStu" data-id="${id}">Mesaj gönder</button></div>`:""}
+  <div class="mact">${id?`<button class="btn danger" data-act="delStu" data-id="${id}">Kaydı sil</button>`:""}<span style="flex:1"></span>
+  ${id&&s.guest&&!s.approved?`<button class="btn" data-act="saveStu" data-id="${id}" data-approve="1">Kaydet ve kayda al</button>`:""}
+  <button class="btn primary" data-act="saveStu" data-id="${id||""}">Kaydet</button></div>`);
+}
+function msgModal(id,date,tplKey){
+  const s=S.students[id];if(!s)return;
+  const st={to:s.parentPhone?"veli":"ogrenci",tpl:tplKey||(date&&markOf(s.groupId,s.id,date)==="-"?"devam":"bos"),date:date||S.ui.date||TODAY};
+  msgModal.st={...st,id};
+  drawMsgModal(true);
+}
+function drawMsgModal(resetText){
+  const st=msgModal.st;const s=S.students[st.id];
+  const ph=st.to==="veli"?s.parentPhone:s.studentPhone;
+  const text=resetText?fillTpl(TPL[st.tpl][st.to],s,st.date):val("mmText");
+  openModal(`<h2>${esc(s.name)}</h2><p class="muted small">${esc(gLabel(S.groups[s.groupId]))}</p>
+  <label class="f">Kime</label>
+  <div class="seg"><button data-act="mmTo" data-k="veli" aria-pressed="${st.to==="veli"}">Veli${s.parentName?" ("+esc(s.parentName.split(" ")[0])+")":""}</button><button data-act="mmTo" data-k="ogrenci" aria-pressed="${st.to==="ogrenci"}">Öğrencinin kendisi</button></div>
+  <p class="muted small">${ph?esc(ph):"Bu kişi için numara kayıtlı değil. Öğrenci kartından ekleyebilirsiniz."}</p>
+  <label class="f" for="mmTpl">Şablon</label><select id="mmTpl" class="in" data-on="mmTpl">${Object.entries(TPL).map(([k,v])=>`<option value="${k}" ${st.tpl===k?"selected":""}>${v.l}</option>`).join("")}</select>
+  <label class="f" for="mmText">Mesaj</label><textarea id="mmText" class="in" data-on="mmText">${esc(text)}</textarea>
+  <div class="mact"><button class="btn" data-act="closeModal">Kapat</button>
+  ${ph?`<a id="mmSms" class="btn" href="${smsLink(ph,text)}" data-log="${s.id}" data-ch="SMS" data-to="${st.to}">SMS</a><a id="mmWa" class="btn wa" href="${waLink(ph,text)}" target="_blank" rel="noopener" data-log="${s.id}" data-ch="WhatsApp" data-to="${st.to}">WhatsApp'ta aç</a>`:""}</div>`);
+}
+function groupModal(id){
+  const g=id?S.groups[id]:{name:"",teacherId:"",days:[6,0],start:"09:00",end:"11:00"};
+  const ts=Object.values(S.teachers).sort((a,b)=>trSort(a.name,b.name));
+  openModal(`<h2>${id?"Sınıfı düzenle":"Yeni sınıf"}</h2>
+  <label class="f" for="grName">Sınıf adı</label><input id="grName" class="in" value="${esc(g.name)}" placeholder="Örn. LGS Matematik A" maxlength="40">
+  <p class="note">Bu isim öğretmen ekranında, raporlarda ve veli mesajlarında görünür.</p>
+  <label class="f" for="grT">Öğretmen</label><select id="grT" class="in"><option value="">Seçin</option>${ts.map(t=>`<option value="${t.id}" ${g.teacherId===t.id?"selected":""}>${esc(t.name)} Hoca</option>`).join("")}</select>
+  ${ts.length?"":`<p class="note">Önce bir öğretmen ekleyin.</p>`}
+  <label class="f">Günler</label><div class="row">${DAY_ORDER.map(d=>`<label class="row" style="gap:5px"><input type="checkbox" class="grDay" value="${d}" ${(g.days||[]).includes(d)?"checked":""}> ${GUN[d]}</label>`).join("")}</div>
+  <div class="grid2"><div><label class="f" for="grS">Başlangıç</label><input id="grS" type="time" class="in" value="${esc(g.start)}"></div><div><label class="f" for="grE">Bitiş</label><input id="grE" type="time" class="in" value="${esc(g.end)}"></div></div>
+  <div class="mact">${id?`<button class="btn danger" data-act="delGroup" data-id="${id}">Sınıfı sil</button>`:""}<span style="flex:1"></span><button class="btn primary" data-act="saveGroup" data-id="${id||""}">Kaydet</button></div>`);
+}
+function teacherModal(id){
+  const t=id?S.teachers[id]:{name:"",phone:""};
+  const tg=id?sortedGroups().filter(g=>g.teacherId===id):[];
+  openModal(`<h2>${id?"Öğretmeni düzenle":"Yeni öğretmen"}</h2>
+  <label class="f" for="tName">Ad</label><input id="tName" class="in" value="${esc(t.name)}" placeholder="Örn. Gülşah">
+  <label class="f" for="tPhone">Telefon</label><input id="tPhone" class="in" inputmode="tel" value="${esc(t.phone||"")}" placeholder="İsteğe bağlı">
+  <p class="note">Öğretmen giriş ekranında adına dokunarak, şifresiz girer.</p>
+  ${id?`<label class="f">Sınıfları</label><p class="small" style="margin:0">${tg.length?tg.map(g=>esc(g.name)+" ("+esc(g.start)+")").join(", "):"Henüz sınıf atanmadı. Sınıf eklerken bu öğretmeni seçin."}</p>`:""}
+  <div class="mact">${id?`<button class="btn danger" data-act="delTeacher" data-id="${id}">Sil</button>`:""}<span style="flex:1"></span><button class="btn primary" data-act="saveTeacher" data-id="${id||""}">Kaydet</button></div>`);
+}
+function confirmModal(title,text,act,data){
+  openModal(`<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="mact"><button class="btn" data-act="closeModal">Vazgeç</button><button class="btn primary" data-act="${act}" ${Object.entries(data||{}).map(([k,v])=>`data-${k}="${esc(v)}"`).join(" ")}>Onayla</button></div>`);
+}
+
+/* ---------- writes ---------- */
+async function safe(fn,okMsg){try{await fn();if(okMsg)toast(okMsg);return true}catch(e){toast("İşlem yapılamadı: "+(e?.message||"bağlantı hatası"));return false}}
+async function sbIns(t,obj){const{data,error}=await S.sb.from(t).insert(obj).select().single();if(error)throw error;await reload(t);return data}
+async function sbUpd(t,id,obj){const{error}=await S.sb.from(t).update(obj).eq("id",id);if(error)throw error;await reload(t)}
+async function sbDel(t,id){const{error}=await S.sb.from(t).delete().eq("id",id);if(error)throw error;await reload(t)}
+function logMsg(sid,ch,to){
+  const s=S.students[sid];if(!s)return;
+  const text=$("#mmText")?val("mmText"):fillTpl(S.ui.msg.text,s,S.ui.date);
+  const at=new Date().toISOString();
+  S.logs=[{id:"tmp"+Date.now(),at,name:s.name,to,channel:ch,text},...S.logs].slice(0,60);
+  S.sb.from("msglog").insert({student_id:sid,name:s.name,target:to,channel:ch,body:text}).then(()=>{},()=>{});
+}
+async function exportCSV(gid){
+  const month=gid?S.ui.month:THIS_MONTH;
+  const gs=gid?[S.groups[gid]]:sortedGroups();
+  const lines=[];
+  gs.forEach(g=>{
+    const dates=lessonDates(g,month);
+    lines.push([`${g.name} ${g.start}-${g.end} ${teacherName(g.teacherId)} Hoca`,...dates.map(fmtShort),"Geldi","Gelmedi"].join(";"));
+    groupStudents(g.id).forEach(s=>{let p=0,m=0;const c=dates.map(d=>{const v=markOf(g.id,s.id,d);if(v==="+")p++;if(v==="-")m++;return v});lines.push([s.name+(s.guest&&!s.approved?" (misafir)":""),...c,p,m].join(";"))});
+    lines.push("");
+  });
+  try{
+    const name=`yoklama-${gid?S.groups[gid].name.replace(/[^A-Za-z0-9ğüşıöçĞÜŞİÖÇ]+/g,"")+"-":""}${month}.csv`;
+    const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+    toast("Dosya indirildi");
+  }catch(e){toast("Dosya oluşturulamadı")}
+}
+
+/* ---------- actions ---------- */
+const A={
+  pickT(el){const t=S.teachers[el.dataset.id];if(!t)return;S.session={role:"teacher",teacherId:t.id};S.ui.tMonth=THIS_MONTH;saveSession();render();window.scrollTo(0,0)},
+  loginA(){if(val("apin")&&val("apin")===String(S.settings.adminPin)){S.session={role:"admin"};saveSession();render()}else toast("Şifre yanlış")},
+  logout(){S.session=null;S.ui.loginT=null;saveSession();render();window.scrollTo(0,0)},
+  tab(el){S.ui.tab=el.dataset.k;if(el.dataset.k!=="siniflar")S.ui.groupId=null;render();window.scrollTo(0,0)},
+  tGroup(el){S.ui.tGroup=el.dataset.id;render()},
+  month(el){const k=+el.dataset.k;if(S.session.role==="admin")S.ui.month=shiftMonth(S.ui.month,k);else S.ui.tMonth=shiftMonth(S.ui.tMonth,k);render()},
+  day(el){S.ui.date=stepLessonDay(S.ui.date,+el.dataset.k);render()},
+  tog(el){const{g,s,d}=el.dataset;const cur=markOf(g,s,d);const nx=cur===""?"+":cur==="+"?"-":"";setMark(g,s,d,nx);render()},
+  colAll(el){const{g,d}=el.dataset;const empty=groupStudents(g).filter(s=>!markOf(g,s.id,d));
+    if(!empty.length){toast("Bu tarihte boş kutu yok");return}
+    confirmModal("Hepsini + yap",`${fmtDate(d)} için boş olan ${empty.length} kutu + olarak işaretlenecek. Gelmeyenleri sonra − yapabilirsiniz.`,"doColAll",{g,d})},
+  doColAll(el){const{g,d}=el.dataset;groupStudents(g).forEach(s=>{if(!markOf(g,s.id,d))setMark(g,s.id,d,"+")});closeModal();render()},
+  addGuest(el){guestModal(el.dataset.g,el.dataset.d)},
+  async saveGuest(el){const name=val("gName");if(name.length<2){toast("Ad soyad yazın");return}
+    const{g,d}=el.dataset;const mark=$("#gMark")?.checked;
+    el.disabled=true;
+    try{
+      const row=await sbIns("students",{name,group_id:g,parent_name:"",parent_phone:val("gPar"),student_phone:val("gStu"),
+        guest:true,approved:false,added_by:S.session.teacherId||"admin"});
+      if(mark&&d)setMark(g,row.id,d,"+");
+      closeModal();toast("Misafir öğrenci eklendi");render();
+    }catch(e){el.disabled=false;toast("Eklenemedi: "+(e?.message||"bağlantı hatası"))}},
+  openGroup(el){S.ui.tab="siniflar";S.ui.groupId=el.dataset.id;S.ui.month=el.dataset.m||THIS_MONTH;render();window.scrollTo(0,0)},
+  closeGroup(){S.ui.groupId=null;render()},
+  approve(el){safe(()=>sbUpd("students",el.dataset.id,{approved:true,guest:false}),"Kayda alındı")},
+  editStu(el){studentModal(el.dataset.id)},
+  newStu(){studentModal(null)},
+  async saveStu(el){const id=el.dataset.id;const name=val("sName");const groupId=val("sGroup");
+    if(name.length<2||!groupId){toast("Ad soyad ve sınıf gerekli");return}
+    const data={name,group_id:groupId,parent_name:val("sPName"),parent_phone:val("sPPhone"),student_phone:val("sSPhone")};
+    if(el.dataset.approve){data.approved=true;data.guest=false}
+    const ok=await safe(()=>id?sbUpd("students",id,data):sbIns("students",{...data,guest:false,approved:true}),"Kaydedildi");
+    if(ok)closeModal()},
+  delStu(el){confirmModal("Kaydı sil",`${S.students[el.dataset.id]?.name} listelerden kaldırılacak. Geçmiş yoklamalar silinmez.`,"doDelStu",{id:el.dataset.id})},
+  async doDelStu(el){if(await safe(()=>sbUpd("students",el.dataset.id,{active:false}),"Kayıt silindi"))closeModal()},
+  msgStu(el){msgModal(el.dataset.id,el.dataset.d,el.dataset.tpl)},
+  mmTo(el){msgModal.st.to=el.dataset.k;drawMsgModal(true)},
+  bulkAbsent(){S.ui.tab="mesajlar";Object.assign(S.ui.msg,{scope:"absent",to:"veli",tpl:"devam",text:TPL.devam.veli,sent:{}});render();window.scrollTo(0,0)},
+  bulkGroup(el){S.ui.tab="mesajlar";Object.assign(S.ui.msg,{scope:"group",groupId:el.dataset.g,tpl:"bos",text:TPL.bos[S.ui.msg.to],sent:{}});S.ui.groupId=null;render();window.scrollTo(0,0)},
+  msgTo(el){const m=S.ui.msg;m.to=el.dataset.k;m.text=TPL[m.tpl][m.to];render()},
+  editGroup(el){groupModal(el.dataset.id)},
+  async saveGroup(el){const id=el.dataset.id;const days=[...document.querySelectorAll(".grDay:checked")].map(x=>+x.value);
+    const data={name:val("grName"),teacher_id:val("grT"),days,start_time:val("grS"),end_time:val("grE")};
+    if(!data.name){toast("Sınıfa bir isim verin");return}
+    if(!data.teacher_id||!days.length||!data.start_time||!data.end_time){toast("Öğretmen, gün ve saat gerekli");return}
+    if(data.end_time<=data.start_time){toast("Bitiş saati başlangıçtan sonra olmalı");return}
+    if(Object.values(S.groups).some(x=>x.id!==id&&x.name.toLocaleLowerCase("tr")===data.name.toLocaleLowerCase("tr"))){toast("Bu isimde bir sınıf zaten var");return}
+    if(await safe(()=>id?sbUpd("groups",id,data):sbIns("groups",data),id?"Sınıf güncellendi":"Sınıf eklendi"))closeModal()},
+  delGroup(el){const n=groupStudents(el.dataset.id).length;if(n){toast(`Önce ${n} öğrenciyi başka sınıfa taşıyın`);return}
+    confirmModal("Sınıfı sil",`${S.groups[el.dataset.id]?.name} silinecek.`,"doDelGroup",{id:el.dataset.id})},
+  async doDelGroup(el){if(await safe(()=>sbDel("groups",el.dataset.id),"Sınıf silindi"))closeModal()},
+  editTeacher(el){teacherModal(el.dataset.id)},
+  async saveTeacher(el){const id=el.dataset.id;const data={name:val("tName").replace(/\s*Hoca$/i,""),phone:val("tPhone")};
+    if(!data.name){toast("Öğretmenin adını yazın");return}
+    if(await safe(()=>id?sbUpd("teachers",id,data):sbIns("teachers",data),id?"Öğretmen güncellendi":"Öğretmen eklendi"))closeModal()},
+  delTeacher(el){const n=Object.values(S.groups).filter(g=>g.teacherId===el.dataset.id).length;if(n){toast(`Önce bu öğretmenin ${n} grubunu başka öğretmene verin`);return}
+    confirmModal("Öğretmeni sil","Bu öğretmen silinecek.","doDelTeacher",{id:el.dataset.id})},
+  async doDelTeacher(el){if(await safe(()=>sbDel("teachers",el.dataset.id),"Silindi"))closeModal()},
+  saveAdminPin(){const p=val("adminPin");if(!/^\d{4,8}$/.test(p)){toast("4–8 haneli rakam girin");return}safe(async()=>{const{error}=await S.sb.from("settings").upsert({key:"admin_pin",value:p});if(error)throw error;S.settings.adminPin=p},"Şifre kaydedildi")},
+  csv(el){exportCSV(el.dataset.g)},
+  saveCfg(){
+    const url=val("cfgUrl").replace(/\/+$/,"");const key=val("cfgKey");
+    if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){toast("Adres https://xxxx.supabase.co biçiminde olmalı");return}
+    if(key.length<20){toast("Anahtarı eksiksiz yapıştırın");return}
+    try{localStorage.setItem("sem_cfg",JSON.stringify({url,key}))}catch(e){}
+    location.reload();
+  },
+  resetCfg(){try{localStorage.removeItem("sem_cfg")}catch(e){}location.hash="";location.reload()},
+  reloadPage(){location.reload()},
+  copyLink(){
+    const l=setupLink();
+    const done=()=>toast("Kurulum linki kopyalandı");
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(l).then(done,()=>prompt("Kopyalayın:",l));
+    else prompt("Kopyalayın:",l);
+  },
+  closeModal(){closeModal()},
+  modalBg(el,e){if(e.target===el)closeModal()}
+};
+document.addEventListener("click",e=>{
+  const lg=e.target.closest("[data-log]");
+  if(lg){const to=lg.dataset.to||S.ui.msg.to;logMsg(lg.dataset.log,lg.dataset.ch,to);if(!lg.dataset.to){S.ui.msg.sent[to+":"+lg.dataset.log]=true;setTimeout(render,50)}return}
+  const el=e.target.closest("[data-act]");if(!el||el.disabled)return;
+  const f=A[el.dataset.act];if(f)f(el,e);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&$("#modal").innerHTML)closeModal();
+  if(e.key==="Enter"&&e.target.dataset?.enter)A[e.target.dataset.enter]();
+});
+const ON={
+  filterT:v=>{S.ui.filterT=v;render()},filterH:v=>{S.ui.filterH=v;render()},
+  q:v=>{S.ui.q=v;render()},qGroup:v=>{S.ui.qGroup=v;render()},
+  msgScope:v=>{S.ui.msg.scope=v;S.ui.msg.sent={};render()},msgGroup:v=>{S.ui.msg.groupId=v;S.ui.msg.sent={};render()},
+  msgTpl:v=>{const m=S.ui.msg;m.tpl=v;m.text=TPL[v][m.to];render()},
+  msgText:v=>{S.ui.msg.text=v;clearTimeout(ON._t);ON._t=setTimeout(render,500)},
+  mmTpl:v=>{msgModal.st.tpl=v;drawMsgModal(true)},
+  mmText:v=>{const s=S.students[msgModal.st.id];const ph=msgModal.st.to==="veli"?s.parentPhone:s.studentPhone;
+    const wa=$("#mmWa"),sm=$("#mmSms");if(wa)wa.href=waLink(ph,v);if(sm)sm.href=smsLink(ph,v)}
+};
+document.addEventListener("input",e=>{const k=e.target.dataset?.on;if(k&&ON[k]&&e.target.tagName!=="SELECT")ON[k](e.target.value)});
+document.addEventListener("change",e=>{const k=e.target.dataset?.on;if(k&&ON[k]&&e.target.tagName==="SELECT")ON[k](e.target.value)});
+</script>
+</body>
+</html>
