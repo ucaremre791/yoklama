@@ -380,6 +380,9 @@ boot();
 function render(){
   const app=$("#app");
   const ae=document.activeElement;const keep=ae&&ae.dataset?ae.dataset.keep:null;const caret=keep&&ae.selectionStart;
+  const prevKey=S.sheetKey;const prevWrap=app.querySelector(".sheet-wrap");
+  const prevX=prevWrap?prevWrap.scrollLeft:null;const prevY=window.scrollY;
+  S.sheetKey=null;
   if(!S.ready){app.innerHTML=`<main><p class="muted">Yükleniyor…</p></main>`;return}
   if(!S.cfg){app.innerHTML=setupView();return}
   if(S.connErr){app.innerHTML=`${topBar("","Bağlantı")}</header><main><div class="login"><div class="panel pad"><h2>Bağlanılamadı</h2><p>${esc(S.connErr)}</p><div class="mact"><button class="btn" data-act="resetCfg">Bağlantı ayarlarını sıfırla</button><button class="btn primary" data-act="reloadPage">Tekrar dene</button></div></div></div></main>`;return}
@@ -389,7 +392,10 @@ function render(){
   else if(S.session.role==="admin")app.innerHTML=adminView();
   else app.innerHTML=teacherView();
   if(keep){const el=app.querySelector(`[data-keep="${keep}"]`);if(el){el.focus();try{el.setSelectionRange(caret,caret)}catch(e){}}}
-  scrollToToday(app);
+  const wrap=app.querySelector(".sheet-wrap");
+  if(wrap&&prevX!=null&&prevKey&&prevKey===S.sheetKey)wrap.scrollLeft=prevX;
+  else scrollToToday(app);
+  if(prevY&&window.scrollY!==prevY)window.scrollTo(0,prevY);
 }
 /* tabloyu, işaretlenecek güne kaydır */
 function scrollToToday(app){
@@ -462,6 +468,7 @@ function cellFace(k,v){
 function sheetHTML(g,month,opts){
   const admin=!!opts.admin;
   const k=S.ui.view;
+  S.sheetKey=g.id+"|"+month+"|"+k;
   const dates=lessonDates(g,month);
   const studs=groupStudents(g.id);
   const fd=focusDateFor(dates);
@@ -492,14 +499,14 @@ function sheetHTML(g,month,opts){
       if(k==="hw"?v==="v":v==="+")tot++;
       const ed=editable(d);
       const lbl=k==="hw"?(v?HWL[v]:"boş"):(v==="+"?"geldi":v==="-"?"gelmedi":"boş");
-      return `<td class="${d===fd?"today":""} ${ed?"":"locked"}"><button class="cell ${k==="att"?(v==="+"?"p":v==="-"?"m":""):""}" data-act="tog" data-g="${g.id}" data-s="${s.id}" data-d="${d}" ${ed?"":'data-locked="1"'} aria-label="${esc(s.name)} ${fmtShort(d)}: ${lbl}">${cellFace(k,v)}</button></td>`;
+      return `<td data-d="${d}" class="${d===fd?"today":""} ${ed?"":"locked"}"><button class="cell ${k==="att"?(v==="+"?"p":v==="-"?"m":""):""}" data-act="tog" data-g="${g.id}" data-s="${s.id}" data-d="${d}" ${ed?"":'data-locked="1"'} aria-label="${esc(s.name)} ${fmtShort(d)}: ${lbl}">${cellFace(k,v)}</button></td>`;
     }).join("");
-    rows+=`<tr><td class="name"><div class="nm"><span class="num">${i+1}</span><span class="t">${esc(s.name)}</span>${guest?`<span class="badge">Misafir</span>`:""}${admin?`<button class="msgb" data-act="msgStu" data-id="${s.id}" data-d="${fd||""}" aria-label="${esc(s.name)} için mesaj">✉</button>`:""}</div></td>${cells}<td class="tot">${tot}</td></tr>`;
+    rows+=`<tr data-s="${s.id}"><td class="name"><div class="nm"><span class="num">${i+1}</span><span class="t">${esc(s.name)}</span>${guest?`<span class="badge">Misafir</span>`:""}${admin?`<button class="msgb" data-act="msgStu" data-id="${s.id}" data-d="${fd||""}" aria-label="${esc(s.name)} için mesaj">✉</button>`:""}</div></td>${cells}<td class="tot">${tot}</td></tr>`;
   });
   const foot=dates.map(d=>{
     let a=0,b=0;
     studs.forEach(s=>{const v=mk[s.id]?.[d];if(!v)return;b++;if(k==="hw"?v==="v":v==="+")a++});
-    return `<td class="${d===fd?"today":""}">${b?`${a}/${b}`:"–"}</td>`}).join("");
+    return `<td data-d="${d}" class="${d===fd?"today":""}">${b?`${a}/${b}`:"–"}</td>`}).join("");
   const legend=k==="hw"
     ? `<span><b class="hw v">✓</b> yaptı</span><span><b class="hw e">~</b> eksik</span><span><b class="hw x">✗</b> yapmadı</span><span>Kutuya dokun: sırayla değişir.</span>`
     : `<span><b style="color:var(--ok)">+</b> geldi</span><span><b style="color:var(--no)">−</b> gelmedi</span><span>Kutuya dokun: boş, +, −. Tarihe dokun: boşları + yap.</span>`;
@@ -515,6 +522,32 @@ function sheetHTML(g,month,opts){
       <div class="row">${admin?`<button class="btn sm" data-act="csv" data-g="${g.id}">Excel'e aktar</button>`:""}
       <button class="btn ${admin?"sm":"primary"}" data-act="addGuest" data-g="${g.id}" data-d="${fd||""}">+ Misafir öğrenci ekle</button></div>
     </div></div>`;
+}
+
+/* tek kutuyu yerinde güncelle — sayfa baştan çizilmez, kaydırma bozulmaz */
+function paintCell(el,k,v,d){
+  el.innerHTML=cellFace(k,v);
+  el.classList.remove("p","m");
+  if(k==="att"&&v==="+")el.classList.add("p");
+  if(k==="att"&&v==="-")el.classList.add("m");
+  const who=(el.closest("tr")?.querySelector(".nm .t")?.textContent)||"";
+  const lbl=k==="hw"?(v?HWL[v]:"boş"):(v==="+"?"geldi":v==="-"?"gelmedi":"boş");
+  el.setAttribute("aria-label",`${who} ${fmtShort(d)}: ${lbl}`);
+}
+function repaintTotals(k,gid,month){
+  const mk=store(k)[attId(gid,month)]?.marks||{};
+  const good=v=>k==="hw"?v==="v":v==="+";
+  const rows=[...document.querySelectorAll("table.sheet tbody tr[data-s]")];
+  rows.forEach(tr=>{
+    let n=0;
+    tr.querySelectorAll("td[data-d]").forEach(td=>{if(good(mk[tr.dataset.s]?.[td.dataset.d]))n++});
+    const tot=tr.querySelector("td.tot");if(tot)tot.textContent=n;
+  });
+  document.querySelectorAll("table.sheet tfoot td[data-d]").forEach(td=>{
+    let a=0,b=0;
+    rows.forEach(tr=>{const v=mk[tr.dataset.s]?.[td.dataset.d];if(!v)return;b++;if(good(v))a++});
+    td.textContent=b?`${a}/${b}`:"–";
+  });
 }
 
 /* ---------- teacher panel ---------- */
@@ -907,7 +940,10 @@ const A={
   tog(el){
     if(el.dataset.locked){A.askUnlock(el);return}
     const{g,s,d}=el.dataset;const k=S.ui.view;
-    setMarkK(k,g,s,d,nextCycle(k,markOfK(k,g,s,d)));render()},
+    const nv=nextCycle(k,markOfK(k,g,s,d));
+    setMarkK(k,g,s,d,nv);
+    paintCell(el,k,nv,d);
+    repaintTotals(k,g,d.slice(0,7));},
   colAll(el){
     if(el.dataset.locked){A.askUnlock(el);return}
     const{g,d}=el.dataset;const k=S.ui.view;
