@@ -124,6 +124,17 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:100%;font-size:1
 .cell[disabled]:hover{background:transparent}
 .sheet tfoot td{height:38px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--card)}
 .sheet tfoot .name{font-weight:600;color:var(--muted)}
+.sheet-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--paper)}
+.sheet-bar .sp{flex:1}
+.btn.warn{border-color:var(--guest);color:var(--guest);background:var(--guestbg)}
+td.locked,th.dcol.locked{background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--rule) 6px,var(--rule) 7px)}
+td.locked .cell{opacity:.5}
+th.dcol.locked button{opacity:.55}
+.hw{font-family:Figtree,system-ui,sans-serif;font-weight:800;font-size:22px}
+.hw.v{color:var(--ok)}
+.hw.e{color:var(--guest)}
+.hw.x{color:var(--no)}
+.legend .hw{font-size:19px;position:relative;top:2px}
 .msgb{border:0;background:none;cursor:pointer;color:#1F9D55;font-size:17px;padding:4px;margin-left:auto;flex:none}
 .sheet-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 16px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
@@ -229,9 +240,9 @@ var SUPABASE_KEY = "";   // anon / publishable key
 
 const S={
   sb:null,cfg:null,dl:null,ready:false,connErr:"",months:{},
-  teachers:{},groups:{},students:{},att:{},logs:[],settings:{adminPin:"9999"},
+  teachers:{},groups:{},students:{},att:{},hw:{},logs:[],settings:{adminPin:"9999"},
   loaded:{},session:null,
-  ui:{tab:"bugun",date:null,groupId:null,month:THIS_MONTH,tGroup:null,tMonth:THIS_MONTH,
+  ui:{tab:"bugun",date:null,groupId:null,month:THIS_MONTH,tGroup:null,tMonth:THIS_MONTH,view:"att",unlocked:false,
       filterT:"",filterH:"",q:"",qGroup:"",loginT:null,
       msg:{scope:"absent",groupId:"",to:"veli",tpl:"devam",text:null,sent:{}}}
 };
@@ -243,23 +254,31 @@ const sortedGroups=()=>Object.values(S.groups).sort((a,b)=>(a.start||"").localeC
 const groupStudents=gid=>Object.values(S.students).filter(s=>s.groupId===gid&&s.active!==false)
   .sort((a,b)=>(a.guest&&!a.approved?1:0)-(b.guest&&!b.approved?1:0)||trSort(a.name,b.name));
 const attId=(gid,m)=>`${gid}_${m}`;
-function markOf(gid,sid,date){return S.att[attId(gid,date.slice(0,7))]?.marks?.[sid]?.[date]||""}
+const store=k=>k==="hw"?S.hw:S.att;
+function markOfK(k,gid,sid,date){return store(k)[attId(gid,date.slice(0,7))]?.marks?.[sid]?.[date]||""}
+function markOf(gid,sid,date){return markOfK("att",gid,sid,date)}
+function hwOf(gid,sid,date){return markOfK("hw",gid,sid,date)}
 function groupTaken(gid,date){const mk=S.att[attId(gid,date.slice(0,7))]?.marks||{};return Object.values(mk).some(o=>o&&o[date])}
+const HWL={v:"yaptı",e:"eksik",x:"yapmadı"};
+const HWCH={v:"✓",e:"~",x:"✗"};
 const gLabel=g=>g?`${g.name} (${g.start}–${g.end})`:"—";
 
-/* ---------- yoklama yazma (her hücre ayrı satır) ---------- */
+/* ---------- yazma (her hücre ayrı satır) ---------- */
+const TBL={att:"attendance",hw:"homework"};
 let wchain=Promise.resolve();
-function setMark(gid,sid,date,val){
-  putMark(gid,sid,date,val);
+function setMarkK(k,gid,sid,date,val){
+  putMark(k,gid,sid,date,val);
+  const t=TBL[k];
   wchain=wchain.then(async()=>{
     try{
       const r=val
-        ?await S.sb.from("attendance").upsert({student_id:sid,group_id:gid,date,mark:val,updated_at:new Date().toISOString()},{onConflict:"student_id,date"})
-        :await S.sb.from("attendance").delete().eq("student_id",sid).eq("date",date);
+        ?await S.sb.from(t).upsert({student_id:sid,group_id:gid,date,mark:val,updated_at:new Date().toISOString()},{onConflict:"student_id,date"})
+        :await S.sb.from(t).delete().eq("student_id",sid).eq("date",date);
       if(r.error)throw r.error;
     }catch(e){toast("Kaydedilemedi: "+(e.message||"bağlantı hatası"))}
   });
 }
+const setMark=(gid,sid,date,val)=>setMarkK("att",gid,sid,date,val);
 
 /* ---------- Supabase bağlantısı ---------- */
 function readCfg(){
@@ -283,15 +302,15 @@ const fromS=r=>({id:r.id,name:r.name,groupId:r.group_id||"",parentName:r.parent_
   studentPhone:r.student_phone||"",guest:!!r.guest,approved:r.approved!==false,addedBy:r.added_by||"",active:r.active!==false,createdAt:r.created_at||""});
 const MAP={teachers:fromT,groups:fromG,students:fromS};
 
-function putMark(gid,sid,date,mark){
-  const id=gid+"_"+String(date).slice(0,7);
-  const doc=S.att[id]||(S.att[id]={groupId:gid,month:String(date).slice(0,7),marks:{}});
+function putMark(k,gid,sid,date,mark){
+  const st=store(k);const id=gid+"_"+String(date).slice(0,7);
+  const doc=st[id]||(st[id]={groupId:gid,month:String(date).slice(0,7),marks:{}});
   const m=doc.marks[sid]||(doc.marks[sid]={});
   if(mark)m[date]=mark;else delete m[date];
 }
-function dropMark(sid,date){
-  const mo=String(date).slice(0,7);
-  for(const id in S.att){if(id.endsWith("_"+mo)&&S.att[id].marks[sid])delete S.att[id].marks[sid][date]}
+function dropMark(k,sid,date){
+  const st=store(k);const mo=String(date).slice(0,7);
+  for(const id in st){if(id.endsWith("_"+mo)&&st[id].marks[sid])delete st[id].marks[sid][date]}
 }
 async function reload(t){
   const{data,error}=await S.sb.from(t).select("*");
@@ -302,12 +321,23 @@ async function reload(t){
 async function loadMonth(m){
   if(S.months[m])return;S.months[m]="yuk";
   const[y,mm]=m.split("-").map(Number);const last=new Date(y,mm,0).getDate();
-  const{data,error}=await S.sb.from("attendance").select("student_id,group_id,date,mark").gte("date",`${m}-01`).lte("date",`${m}-${pad(last)}`);
-  if(error){S.months[m]=false;toast("Yoklama yüklenemedi");return}
-  data.forEach(r=>putMark(r.group_id,r.student_id,String(r.date).slice(0,10),r.mark));
+  const q=t=>S.sb.from(t).select("student_id,group_id,date,mark").gte("date",`${m}-01`).lte("date",`${m}-${pad(last)}`);
+  const[a,b]=await Promise.all([q("attendance"),q("homework")]);
+  if(a.error){S.months[m]=false;toast("Yoklama yüklenemedi");return}
+  (a.data||[]).forEach(r=>putMark("att",r.group_id,r.student_id,String(r.date).slice(0,10),r.mark));
+  if(b.error){if(!S.hwWarned){S.hwWarned=true;toast("Ödev tablosu yok: 4-odev-tablosu.sql dosyasını çalıştırın")}}
+  else (b.data||[]).forEach(r=>putMark("hw",r.group_id,r.student_id,String(r.date).slice(0,10),r.mark));
   S.months[m]=true;schedule();
 }
 function ensureMonth(m){if(!S.months[m])loadMonth(m)}
+
+function live(k,p){
+  const r=p.eventType==="DELETE"?p.old:p.new;if(!r||!r.student_id)return;
+  const d=String(r.date).slice(0,10);
+  if(p.eventType==="DELETE"){r.group_id?putMark(k,r.group_id,r.student_id,d,""):dropMark(k,r.student_id,d)}
+  else putMark(k,r.group_id,r.student_id,d,r.mark);
+  schedule();
+}
 
 /* ---------- boot ---------- */
 let rq=false;
@@ -337,13 +367,8 @@ async function boot(){
   S.sb.from("msglog").select("*").order("at",{ascending:false}).limit(60)
     .then(({data})=>{if(data){S.logs=data.map(r=>({id:r.id,at:r.at,name:r.name,to:r.target,channel:r.channel,text:r.body}));schedule()}});
   S.sb.channel("sem-yoklama")
-    .on("postgres_changes",{event:"*",schema:"public",table:"attendance"},p=>{
-      const r=p.eventType==="DELETE"?p.old:p.new;if(!r||!r.student_id)return;
-      const d=String(r.date).slice(0,10);
-      if(p.eventType==="DELETE"){r.group_id?putMark(r.group_id,r.student_id,d,""):dropMark(r.student_id,d)}
-      else putMark(r.group_id,r.student_id,d,r.mark);
-      schedule();
-    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"attendance"},p=>live("att",p))
+    .on("postgres_changes",{event:"*",schema:"public",table:"homework"},p=>live("hw",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"students"},()=>reload("students"))
     .on("postgres_changes",{event:"*",schema:"public",table:"groups"},()=>reload("groups"))
     .on("postgres_changes",{event:"*",schema:"public",table:"teachers"},()=>reload("teachers"))
@@ -364,6 +389,15 @@ function render(){
   else if(S.session.role==="admin")app.innerHTML=adminView();
   else app.innerHTML=teacherView();
   if(keep){const el=app.querySelector(`[data-keep="${keep}"]`);if(el){el.focus();try{el.setSelectionRange(caret,caret)}catch(e){}}}
+  scrollToToday(app);
+}
+/* tabloyu, işaretlenecek güne kaydır */
+function scrollToToday(app){
+  const wrap=app.querySelector(".sheet-wrap");if(!wrap)return;
+  const th=wrap.querySelector("th.today");if(!th)return;
+  const nameW=(wrap.querySelector("thead th.name")||{offsetWidth:0}).offsetWidth;
+  const want=th.offsetLeft-nameW-8;
+  if(want>4&&Math.abs(wrap.scrollLeft-want)>4)wrap.scrollLeft=want;
 }
 
 function topBar(right,sub){
@@ -412,47 +446,74 @@ function loginView(){
   </div></main>`;
 }
 
-/* ---------- the sheet (paper-style attendance) ---------- */
+/* ---------- yoklama tablosu ---------- */
 function focusDateFor(dates){
   if(dates.includes(TODAY))return TODAY;
   const past=dates.filter(d=>d<=TODAY);return past.length?past[past.length-1]:null;
 }
+function nextCycle(k,cur){
+  if(k==="hw")return cur===""?"v":cur==="v"?"e":cur==="e"?"x":"";
+  return cur===""?"+":cur==="+"?"-":"";
+}
+function cellFace(k,v){
+  if(k==="hw")return v?`<span class="hw ${v}">${HWCH[v]}</span>`:"";
+  return v==="+"?"+":v==="-"?"−":"";
+}
 function sheetHTML(g,month,opts){
   const admin=!!opts.admin;
+  const k=S.ui.view;
   const dates=lessonDates(g,month);
   const studs=groupStudents(g.id);
-  const locked=!admin&&month<THIS_MONTH;
   const fd=focusDateFor(dates);
-  const mk=S.att[attId(g.id,month)]?.marks||{};
+  const openAll=S.ui.unlocked;
+  const editable=d=>openAll||(d===fd&&month===THIS_MONTH);
+  const mk=store(k)[attId(g.id,month)]?.marks||{};
   const head=`<div class="sheet-head">
       <div><h2>${esc(g.name)}</h2><div class="muted small">${esc(teacherName(g.teacherId))} Hoca, ${daysLabel(g.days)} ${esc(g.start)}–${esc(g.end)}</div></div>
       <div class="monthnav"><button class="iconbtn" aria-label="Önceki ay" data-act="month" data-k="-1">‹</button><b>${monthLabel(month)}</b><button class="iconbtn" aria-label="Sonraki ay" data-act="month" data-k="1">›</button></div>
-    </div>${locked?`<div class="lock">Geçmiş ayların yoklaması kilitli. Düzeltme gerekirse yöneticiye haber verin.</div>`:""}`;
+    </div>
+    <div class="sheet-bar">
+      <div class="seg" role="group" aria-label="Görünüm">
+        <button data-act="view" data-k="att" aria-pressed="${k==="att"}">Yoklama</button>
+        <button data-act="view" data-k="hw" aria-pressed="${k==="hw"}">Ödev</button>
+      </div>
+      <div class="sp"></div>
+      ${openAll
+        ? `<button class="btn sm warn" data-act="lockBack">🔓 Tüm günler açık — kilitle</button>`
+        : `<button class="btn sm" data-act="askUnlock">🔒 Geçmişi düzenle</button>`}
+    </div>`;
   if(!dates.length)return `<div class="panel">${head}<div class="empty">Bu sınıfın ders günü tanımlı değil.</div></div>`;
   let rows="";
   studs.forEach((s,i)=>{
     const guest=s.guest&&!s.approved;
-    let plus=0;
+    let tot=0;
     const cells=dates.map(d=>{
-      const v=mk[s.id]?.[d]||"";if(v==="+")plus++;
-      return `<td class="${d===fd?"today":""}"><button class="cell ${v==="+"?"p":v==="-"?"m":""}" data-act="tog" data-g="${g.id}" data-s="${s.id}" data-d="${d}" ${locked?"disabled":""} aria-label="${esc(s.name)} ${fmtShort(d)}: ${v==="+"?"geldi":v==="-"?"gelmedi":"boş"}">${v==="+"?"+":v==="-"?"−":""}</button></td>`;
+      const v=mk[s.id]?.[d]||"";
+      if(k==="hw"?v==="v":v==="+")tot++;
+      const ed=editable(d);
+      const lbl=k==="hw"?(v?HWL[v]:"boş"):(v==="+"?"geldi":v==="-"?"gelmedi":"boş");
+      return `<td class="${d===fd?"today":""} ${ed?"":"locked"}"><button class="cell ${k==="att"?(v==="+"?"p":v==="-"?"m":""):""}" data-act="tog" data-g="${g.id}" data-s="${s.id}" data-d="${d}" ${ed?"":'data-locked="1"'} aria-label="${esc(s.name)} ${fmtShort(d)}: ${lbl}">${cellFace(k,v)}</button></td>`;
     }).join("");
-    rows+=`<tr><td class="name"><div class="nm"><span class="num">${i+1}</span><span class="t">${esc(s.name)}</span>${guest?`<span class="badge">Misafir</span>`:""}${admin?`<button class="msgb" data-act="msgStu" data-id="${s.id}" data-d="${fd||""}" aria-label="${esc(s.name)} için mesaj">✉</button>`:""}</div></td>${cells}<td class="tot">${plus}</td></tr>`;
+    rows+=`<tr><td class="name"><div class="nm"><span class="num">${i+1}</span><span class="t">${esc(s.name)}</span>${guest?`<span class="badge">Misafir</span>`:""}${admin?`<button class="msgb" data-act="msgStu" data-id="${s.id}" data-d="${fd||""}" aria-label="${esc(s.name)} için mesaj">✉</button>`:""}</div></td>${cells}<td class="tot">${tot}</td></tr>`;
   });
   const foot=dates.map(d=>{
-    let p=0,m=0;studs.forEach(s=>{const v=mk[s.id]?.[d];if(v==="+")p++;else if(v==="-")m++});
-    return `<td class="${d===fd?"today":""}">${p||m?`${p}/${p+m}`:"–"}</td>`}).join("");
+    let a=0,b=0;
+    studs.forEach(s=>{const v=mk[s.id]?.[d];if(!v)return;b++;if(k==="hw"?v==="v":v==="+")a++});
+    return `<td class="${d===fd?"today":""}">${b?`${a}/${b}`:"–"}</td>`}).join("");
+  const legend=k==="hw"
+    ? `<span><b class="hw v">✓</b> yaptı</span><span><b class="hw e">~</b> eksik</span><span><b class="hw x">✗</b> yapmadı</span><span>Kutuya dokun: sırayla değişir.</span>`
+    : `<span><b style="color:var(--ok)">+</b> geldi</span><span><b style="color:var(--no)">−</b> gelmedi</span><span>Kutuya dokun: boş, +, −. Tarihe dokun: boşları + yap.</span>`;
   return `<div class="panel">${head}
     ${studs.length?`<div class="sheet-wrap"><table class="sheet">
       <thead><tr><th class="name">Öğrenci (${studs.length})</th>${dates.map(d=>{const dd=parseYmd(d);
-        return `<th class="dcol ${d===fd?"today":""}"><button data-act="colAll" data-g="${g.id}" data-d="${d}" ${locked?"disabled":""} title="Boş kutuları + yap"><b>${dd.getDate()}</b><small>${GUN[dd.getDay()]}</small></button></th>`}).join("")}<th>Top.</th></tr></thead>
+        return `<th class="dcol ${d===fd?"today":""} ${editable(d)?"":"locked"}"><button data-act="colAll" data-g="${g.id}" data-d="${d}" ${editable(d)?"":'data-locked="1"'} title="Boş kutuları doldur"><b>${dd.getDate()}</b><small>${GUN[dd.getDay()]}</small></button></th>`}).join("")}<th>${k==="hw"?"✓":"Top."}</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><td class="name">Gelen / işaretli</td>${foot}<td></td></tr></tfoot>
+      <tfoot><tr><td class="name">${k==="hw"?"Yapan / işaretli":"Gelen / işaretli"}</td>${foot}<td></td></tr></tfoot>
     </table></div>`:`<div class="empty">Bu sınıfta öğrenci yok. Aşağıdan misafir öğrenci ekleyerek başlayabilirsiniz.</div>`}
     <div class="sheet-foot">
-      <div class="legend"><span><b style="color:var(--ok)">+</b> geldi</span><span><b style="color:var(--no)">−</b> gelmedi</span><span>Kutuya dokun: boş, +, −. Tarihe dokun: boşları + yap.</span></div>
+      <div class="legend">${legend}</div>
       <div class="row">${admin?`<button class="btn sm" data-act="csv" data-g="${g.id}">Excel'e aktar</button>`:""}
-      ${locked?"":`<button class="btn ${admin?"sm":"primary"}" data-act="addGuest" data-g="${g.id}" data-d="${fd||""}">+ Misafir öğrenci ekle</button>`}</div>
+      <button class="btn ${admin?"sm":"primary"}" data-act="addGuest" data-g="${g.id}" data-d="${fd||""}">+ Misafir öğrenci ekle</button></div>
     </div></div>`;
 }
 
@@ -497,6 +558,12 @@ function streakAlerts(){
   });
   return out;
 }
+function hwMissingOn(date){
+  const dow=parseYmd(date).getDay();const out=[];
+  sortedGroups().filter(g=>(g.days||[]).includes(dow)).forEach(g=>groupStudents(g.id).forEach(s=>{
+    const v=hwOf(g.id,s.id,date);if(v==="x"||v==="e")out.push({s,g,v})}));
+  return out;
+}
 const pendingGuests=()=>Object.values(S.students).filter(s=>s.guest&&!s.approved&&s.active!==false).sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
 
 function adminView(){
@@ -524,22 +591,31 @@ function viewToday(){
     studs.forEach(s=>{const v=markOf(g.id,s.id,date);if(v==="+")p++;else if(v==="-")m++});
     const tk=p+m>0;if(tk)taken++;pres+=p;abs+=m;
     const pill=tk?(m?`<span class="pill no">${p} geldi, ${m} gelmedi</span>`:`<span class="pill ok">${p} geldi</span>`):(date>TODAY?`<span class="pill wait">Ders günü</span>`:`<span class="pill no">Yoklama alınmadı</span>`);
-    return `<li class="clickable" data-act="openGroup" data-id="${g.id}" data-m="${date.slice(0,7)}"><span class="time">${esc(g.start)}</span><div class="grow"><b>${esc(g.name)}</b><span class="muted small">${esc(teacherName(g.teacherId))} Hoca, ${studs.length} öğrenci</span></div>${pill}</li>`;
+    let hv=0,hn=0;studs.forEach(s=>{const v=hwOf(g.id,s.id,date);if(!v)return;hn++;if(v==="v")hv++});
+    const hpill=hn?`<span class="pill ${hv===hn?"ok":"wait"}">Ödev ${hv}/${hn}</span>`:"";
+    return `<li class="clickable" data-act="openGroup" data-id="${g.id}" data-m="${date.slice(0,7)}"><span class="time">${esc(g.start)}</span><div class="grow"><b>${esc(g.name)}</b><span class="muted small">${esc(teacherName(g.teacherId))} Hoca, ${studs.length} öğrenci</span></div>${hpill}${pill}</li>`;
   }).join("");
   const absList=absenteesOn(date);
   const streak=streakAlerts();
   const guests=pendingGuests();
+  const hwList=hwMissingOn(date);
+  const hwx=hwList.filter(x=>x.v==="x").length;
   return `<div class="daynav"><button class="iconbtn" data-act="day" data-k="-1" aria-label="Önceki ders günü">‹</button><h1>${fmtDate(date)}</h1><button class="iconbtn" data-act="day" data-k="1" aria-label="Sonraki ders günü">›</button></div>
   <div class="stats">
     <div class="stat"><b>${taken}/${gs.length}</b><span>sınıfın yoklaması alındı</span></div>
     <div class="stat"><b>${pres}</b><span>öğrenci geldi</span></div>
     <div class="stat ${abs?"alert":""}"><b>${abs}</b><span>öğrenci gelmedi</span></div>
+    <div class="stat ${hwx?"alert":""}"><b>${hwx}</b><span>ödevini yapmadı</span></div>
     <div class="stat ${streak.length?"alert":""}"><b>${streak.length}</b><span>üst üste 2 derse gelmedi</span></div>
   </div>
   <div class="cols section" style="margin-top:18px">
     <div>
       <h2>Bu günün dersleri</h2>
       <div class="panel">${gs.length?`<ul class="list">${rows}</ul>`:`<div class="empty">Bu gün ders yok.</div>`}</div>
+      <div class="section">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Ödevini yapmayanlar</h2>${hwList.length?`<button class="btn sm wa" data-act="bulkHw">Velilere mesaj hazırla</button>`:""}</div>
+        <div class="panel">${hwList.length?`<ul class="list">${hwList.map(({s,g,v})=>`<li><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(g.name)} ${esc(g.start)}, ${esc(teacherName(g.teacherId))} Hoca</span></div><span class="pill ${v==="x"?"no":"wait"}">${HWL[v]}</span><button class="btn sm" data-act="msgStu" data-id="${s.id}" data-d="${date}" data-tpl="odev">Mesaj</button></li>`).join("")}</ul>`:`<div class="empty">Bu gün ödevi eksik veya yapılmamış öğrenci yok.</div>`}</div>
+      </div>
       <div class="section">
         <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Gelmeyenler</h2>${absList.length?`<button class="btn sm wa" data-act="bulkAbsent">Velilere mesaj hazırla</button>`:""}</div>
         <div class="panel">${absList.length?`<ul class="list">${absList.map(({s,g})=>`<li><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(g.name)} ${esc(g.start)}, ${esc(teacherName(g.teacherId))} Hoca</span></div><button class="btn sm" data-act="msgStu" data-id="${s.id}" data-d="${date}">Mesaj</button></li>`).join("")}</ul>`:`<div class="empty">Bu gün için "−" işaretli öğrenci yok.</div>`}</div>
@@ -575,8 +651,13 @@ function viewClasses(){
 }
 
 function monthStats(s,month){
-  const g=S.groups[s.groupId];if(!g)return{p:0,m:0};
-  let p=0,m=0;lessonDates(g,month).forEach(d=>{const v=markOf(g.id,s.id,d);if(v==="+")p++;else if(v==="-")m++});return{p,m};
+  const g=S.groups[s.groupId];if(!g)return{p:0,m:0,hv:0,he:0,hx:0};
+  let p=0,m=0,hv=0,he=0,hx=0;
+  lessonDates(g,month).forEach(d=>{
+    const v=markOf(g.id,s.id,d);if(v==="+")p++;else if(v==="-")m++;
+    const w=hwOf(g.id,s.id,d);if(w==="v")hv++;else if(w==="e")he++;else if(w==="x")hx++;
+  });
+  return{p,m,hv,he,hx};
 }
 function viewStudents(){
   const q=S.ui.q.trim().toLocaleLowerCase("tr");
@@ -586,7 +667,8 @@ function viewStudents(){
   const normal=list.filter(s=>!(s.guest&&!s.approved));
   const row=s=>{
     const st=monthStats(s,THIS_MONTH);const t=st.p+st.m;const pct=t?Math.round(st.p*100/t):null;
-    return `<li class="clickable" data-act="editStu" data-id="${s.id}"><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(gLabel(S.groups[s.groupId]))}${s.parentName?", veli "+esc(s.parentName):""}</span></div>${pct===null?`<span class="muted small">–</span>`:`<span class="pill ${pct<70?"no":"ok"}">%${pct}</span>`}</li>`;
+    const ht=st.hv+st.he+st.hx;const hpct=ht?Math.round(st.hv*100/ht):null;
+    return `<li class="clickable" data-act="editStu" data-id="${s.id}"><div class="grow"><b>${esc(s.name)}</b><span class="muted small">${esc(gLabel(S.groups[s.groupId]))}${s.parentName?", veli "+esc(s.parentName):""}</span></div>${hpct===null?"":`<span class="pill ${hpct<70?"no":"ok"}">Ödev %${hpct}</span>`}${pct===null?`<span class="muted small">–</span>`:`<span class="pill ${pct<70?"no":"ok"}">Devam %${pct}</span>`}</li>`;
   };
   const grow=s=>{
     const gd=S.groups[s.groupId];const st=monthStats(s,THIS_MONTH);
@@ -605,13 +687,14 @@ function viewStudents(){
     <p class="muted small" style="margin:0 0 10px">Öğretmenlerin derste eklediği yeni öğrenciler. "Kayda al" dediğinizde kalıcı öğrenci olur, "Sil" dediğinizde listeden çıkar.</p>
     <div class="panel"><ul class="list">${guests.map(grow).join("")}</ul></div>
   </section>`:""}
-  <p class="muted small">${normal.length} kayıtlı öğrenci. Devam oranı ${monthLabel(THIS_MONTH).toLocaleLowerCase("tr")} ayı içindir.</p>
+  <p class="muted small">${normal.length} kayıtlı öğrenci. Oranlar ${monthLabel(THIS_MONTH).toLocaleLowerCase("tr")} ayı içindir.</p>
   <div class="panel"><ul class="list">${normal.map(row).join("")||`<li class="muted">Aramaya uyan öğrenci yok.</li>`}</ul></div>`;
 }
 
 /* ---------- messages ---------- */
 const TPL={
   devam:{l:"Devamsızlık bildirimi",veli:"Sayın {veli}, öğrenciniz {ad} bugün ({tarih}) saat {saat} {grup} dersine katılmamıştır. Bilginize sunarız. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, bugün ({tarih}) saat {saat} dersinde seni göremedik. Bir sonraki derste görüşmek üzere. Sarıyer Eğitim Merkezi"},
+  odev:{l:"Ödev bildirimi",veli:"Sayın {veli}, öğrenciniz {ad} bugünkü ({tarih}) {grup} dersine ödevini getirmemiştir. Bilginize sunarız. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, bugün ({tarih}) ödevini eksik gördük. Bir sonraki derse hazır gelmeni bekliyoruz. Sarıyer Eğitim Merkezi"},
   ust:{l:"Üst üste devamsızlık",veli:"Sayın {veli}, öğrenciniz {ad} son iki derse katılmamıştır. Bir sorun varsa bizimle iletişime geçmenizi rica ederiz. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, son iki derste seni göremedik. Her şey yolunda mı? Sarıyer Eğitim Merkezi"},
   hatir:{l:"Ders hatırlatma",veli:"Sayın {veli}, {ad} için {grup} dersi {gunler} günleri saat {saat}'dedir. Sarıyer Eğitim Merkezi",ogrenci:"Merhaba {ad}, dersimiz {gunler} saat {saat}'de. Görüşmek üzere! Sarıyer Eğitim Merkezi"},
   bos:{l:"Serbest metin",veli:"Sayın {veli}, ",ogrenci:"Merhaba {ad}, "}
@@ -627,6 +710,7 @@ function recipients(){
   if(m.scope==="absent")return absenteesOn(S.ui.date).map(x=>x.s);
   if(m.scope==="group")return m.groupId?groupStudents(m.groupId):[];
   if(m.scope==="streak")return streakAlerts().map(x=>x.s);
+  if(m.scope==="hw")return hwMissingOn(S.ui.date).map(x=>x.s);
   return Object.values(S.students).filter(s=>s.active!==false).sort((a,b)=>trSort(a.name,b.name));
 }
 function viewMessages(){
@@ -642,6 +726,7 @@ function viewMessages(){
       <label class="f">Kime</label>
       <select class="in" data-on="msgScope">
         <option value="absent" ${m.scope==="absent"?"selected":""}>${fmtShort(S.ui.date)} günü gelmeyenler</option>
+        <option value="hw" ${m.scope==="hw"?"selected":""}>${fmtShort(S.ui.date)} günü ödevini yapmayanlar</option>
         <option value="streak" ${m.scope==="streak"?"selected":""}>Üst üste 2 derse gelmeyenler</option>
         <option value="group" ${m.scope==="group"?"selected":""}>Bir sınıfın tamamı</option>
         <option value="all" ${m.scope==="all"?"selected":""}>Tüm öğrenciler</option>
@@ -712,7 +797,7 @@ function studentModal(id){
   const s=id?S.students[id]:{name:"",groupId:S.ui.qGroup||"",parentName:"",parentPhone:"",studentPhone:""};
   const st=id?monthStats(s,THIS_MONTH):null;
   openModal(`<h2>${id?esc(s.name):"Yeni öğrenci"}</h2>
-  ${id?`<p class="muted small">${s.guest&&!s.approved?`<span class="badge">Misafir</span> `:""}${monthLabel(THIS_MONTH)}: ${st.p} geldi, ${st.m} gelmedi</p>`:""}
+  ${id?`<p class="muted small">${s.guest&&!s.approved?`<span class="badge">Misafir</span> `:""}${monthLabel(THIS_MONTH)}<br>Devam: ${st.p} geldi, ${st.m} gelmedi<br>Ödev: ${st.hv} yaptı, ${st.he} eksik, ${st.hx} yapmadı</p>`:""}
   <label class="f" for="sName">Ad soyad</label><input id="sName" class="in" value="${esc(s.name)}">
   <label class="f" for="sGroup">Sınıf</label><select id="sGroup" class="in"><option value="">Sınıf seçin</option>${sortedGroups().map(g=>`<option value="${g.id}" ${s.groupId===g.id?"selected":""}>${esc(gLabel(g))}, ${esc(teacherName(g.teacherId))}</option>`).join("")}</select>
   <label class="f" for="sPName">Veli adı</label><input id="sPName" class="in" value="${esc(s.parentName||"")}">
@@ -786,8 +871,12 @@ async function exportCSV(gid){
   const lines=[];
   gs.forEach(g=>{
     const dates=lessonDates(g,month);
-    lines.push([`${g.name} ${g.start}-${g.end} ${teacherName(g.teacherId)} Hoca`,...dates.map(fmtShort),"Geldi","Gelmedi"].join(";"));
+    const hdr=`${g.name} ${g.start}-${g.end} ${teacherName(g.teacherId)} Hoca`;
+    lines.push([hdr+" — YOKLAMA",...dates.map(fmtShort),"Geldi","Gelmedi"].join(";"));
     groupStudents(g.id).forEach(s=>{let p=0,m=0;const c=dates.map(d=>{const v=markOf(g.id,s.id,d);if(v==="+")p++;if(v==="-")m++;return v});lines.push([s.name+(s.guest&&!s.approved?" (misafir)":""),...c,p,m].join(";"))});
+    lines.push("");
+    lines.push([hdr+" — ÖDEV",...dates.map(fmtShort),"Yaptı","Eksik","Yapmadı"].join(";"));
+    groupStudents(g.id).forEach(s=>{let a=0,b=0,c2=0;const c=dates.map(d=>{const v=hwOf(g.id,s.id,d);if(v==="v")a++;if(v==="e")b++;if(v==="x")c2++;return v?HWL[v]:""});lines.push([s.name+(s.guest&&!s.approved?" (misafir)":""),...c,a,b,c2].join(";"))});
     lines.push("");
   });
   try{
@@ -803,16 +892,33 @@ async function exportCSV(gid){
 const A={
   pickT(el){const t=S.teachers[el.dataset.id];if(!t)return;S.session={role:"teacher",teacherId:t.id};S.ui.tMonth=THIS_MONTH;saveSession();render();window.scrollTo(0,0)},
   loginA(){if(val("apin")&&val("apin")===String(S.settings.adminPin)){S.session={role:"admin"};saveSession();render()}else toast("Şifre yanlış")},
-  logout(){S.session=null;S.ui.loginT=null;saveSession();render();window.scrollTo(0,0)},
+  logout(){S.session=null;S.ui.loginT=null;S.ui.unlocked=false;S.ui.view="att";saveSession();render();window.scrollTo(0,0)},
   tab(el){S.ui.tab=el.dataset.k;if(el.dataset.k!=="siniflar")S.ui.groupId=null;render();window.scrollTo(0,0)},
   tGroup(el){S.ui.tGroup=el.dataset.id;render()},
   month(el){const k=+el.dataset.k;if(S.session.role==="admin")S.ui.month=shiftMonth(S.ui.month,k);else S.ui.tMonth=shiftMonth(S.ui.tMonth,k);render()},
   day(el){S.ui.date=stepLessonDay(S.ui.date,+el.dataset.k);render()},
-  tog(el){const{g,s,d}=el.dataset;const cur=markOf(g,s,d);const nx=cur===""?"+":cur==="+"?"-":"";setMark(g,s,d,nx);render()},
-  colAll(el){const{g,d}=el.dataset;const empty=groupStudents(g).filter(s=>!markOf(g,s.id,d));
+  view(el){S.ui.view=el.dataset.k;render()},
+  askUnlock(el){
+    confirmModal("Geçmiş günleri aç",
+      "Şu anda yalnızca en yakın ders gününe işaret koyabilirsiniz. Açarsanız ayın bütün günleri düzenlenebilir hale gelir — yanlışlıkla eski bir günü değiştirmemeye dikkat edin. Çıkış yapınca kilit geri gelir.",
+      "doUnlock",{})},
+  doUnlock(){S.ui.unlocked=true;closeModal();toast("Tüm günler açıldı");render()},
+  lockBack(){S.ui.unlocked=false;toast("Geçmiş günler kilitlendi");render()},
+  tog(el){
+    if(el.dataset.locked){A.askUnlock(el);return}
+    const{g,s,d}=el.dataset;const k=S.ui.view;
+    setMarkK(k,g,s,d,nextCycle(k,markOfK(k,g,s,d)));render()},
+  colAll(el){
+    if(el.dataset.locked){A.askUnlock(el);return}
+    const{g,d}=el.dataset;const k=S.ui.view;
+    const empty=groupStudents(g).filter(s=>!markOfK(k,g,s.id,d));
     if(!empty.length){toast("Bu tarihte boş kutu yok");return}
-    confirmModal("Hepsini + yap",`${fmtDate(d)} için boş olan ${empty.length} kutu + olarak işaretlenecek. Gelmeyenleri sonra − yapabilirsiniz.`,"doColAll",{g,d})},
-  doColAll(el){const{g,d}=el.dataset;groupStudents(g).forEach(s=>{if(!markOf(g,s.id,d))setMark(g,s.id,d,"+")});closeModal();render()},
+    confirmModal(k==="hw"?"Hepsi yaptı":"Hepsi geldi",
+      k==="hw"?`${fmtDate(d)} için boş olan ${empty.length} kutu "yaptı" olarak işaretlenecek. Yapmayanları sonra değiştirebilirsiniz.`
+              :`${fmtDate(d)} için boş olan ${empty.length} kutu + olarak işaretlenecek. Gelmeyenleri sonra − yapabilirsiniz.`,
+      "doColAll",{g,d})},
+  doColAll(el){const{g,d}=el.dataset;const k=S.ui.view;const v=k==="hw"?"v":"+";
+    groupStudents(g).forEach(s=>{if(!markOfK(k,g,s.id,d))setMarkK(k,g,s.id,d,v)});closeModal();render()},
   addGuest(el){guestModal(el.dataset.g,el.dataset.d)},
   async saveGuest(el){const name=val("gName");if(name.length<2){toast("Ad soyad yazın");return}
     const{g,d}=el.dataset;const mark=$("#gMark")?.checked;
@@ -838,6 +944,7 @@ const A={
   async doDelStu(el){if(await safe(()=>sbUpd("students",el.dataset.id,{active:false}),"Kayıt silindi"))closeModal()},
   msgStu(el){msgModal(el.dataset.id,el.dataset.d,el.dataset.tpl)},
   mmTo(el){msgModal.st.to=el.dataset.k;drawMsgModal(true)},
+  bulkHw(){S.ui.tab="mesajlar";Object.assign(S.ui.msg,{scope:"hw",to:"veli",tpl:"odev",text:TPL.odev.veli,sent:{}});render();window.scrollTo(0,0)},
   bulkAbsent(){S.ui.tab="mesajlar";Object.assign(S.ui.msg,{scope:"absent",to:"veli",tpl:"devam",text:TPL.devam.veli,sent:{}});render();window.scrollTo(0,0)},
   bulkGroup(el){S.ui.tab="mesajlar";Object.assign(S.ui.msg,{scope:"group",groupId:el.dataset.g,tpl:"bos",text:TPL.bos[S.ui.msg.to],sent:{}});S.ui.groupId=null;render();window.scrollTo(0,0)},
   msgTo(el){const m=S.ui.msg;m.to=el.dataset.k;m.text=TPL[m.tpl][m.to];render()},
@@ -862,8 +969,10 @@ const A={
   saveAdminPin(){const p=val("adminPin");if(!/^\d{4,8}$/.test(p)){toast("4–8 haneli rakam girin");return}safe(async()=>{const{error}=await S.sb.from("settings").upsert({key:"admin_pin",value:p});if(error)throw error;S.settings.adminPin=p},"Şifre kaydedildi")},
   csv(el){exportCSV(el.dataset.g)},
   saveCfg(){
-    const url=val("cfgUrl").replace(/\/+$/,"");const key=val("cfgKey");
-    if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){toast("Adres https://xxxx.supabase.co biçiminde olmalı");return}
+    let raw=val("cfgUrl");const key=val("cfgKey");
+    if(raw&&!/^https?:\/\//i.test(raw))raw="https://"+raw;
+    let url="";try{url=new URL(raw).origin}catch(e){url=""}
+    if(!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(url)){toast("Adres https://xxxx.supabase.co biçiminde olmalı");return}
     if(key.length<20){toast("Anahtarı eksiksiz yapıştırın");return}
     try{localStorage.setItem("sem_cfg",JSON.stringify({url,key}))}catch(e){}
     location.reload();
